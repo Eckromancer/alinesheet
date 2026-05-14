@@ -48,10 +48,18 @@ export default function Login() {
   return (
     <AppShell subtitle="Buying Review">
       <div className="mx-auto mt-6 max-w-md">
-        <div className="mb-8 text-center">
-          <h1 className="font-display text-4xl font-medium tracking-tight">A L / N E</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Select your store to begin. Reviews will be tagged with your store and reviewer name for the buying team.
+        <div className="mb-8">
+          <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground bracket-num">
+            01
+          </p>
+          <h1 className="mt-4 font-display text-[40px] font-medium leading-[1.05] tracking-tight">
+            Akris PS27 <span className="display-italic">Cruise</span>
+            <br />
+            Colors / Bulk
+          </h1>
+          <div className="mt-4 h-px w-12 bg-foreground" />
+          <p className="mt-5 text-sm text-muted-foreground">
+            Select your store to begin. Each product review is tagged with your door and DSA for the buying office.
           </p>
         </div>
 
