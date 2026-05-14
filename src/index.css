@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Akris × Neiman Marcus buying review — refined neutral luxury palette */
+
+@layer base {
+  :root {
+    --background: 36 33% 97%;          /* ivory */
+    --foreground: 24 15% 12%;          /* espresso */
+
+    --card: 0 0% 100%;
+    --card-foreground: 24 15% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 15% 12%;
+
+    --primary: 24 15% 12%;             /* espresso */
+    --primary-foreground: 36 33% 97%;
+
+    --secondary: 30 15% 92%;
+    --secondary-foreground: 24 15% 12%;
+
+    --muted: 30 15% 94%;
+    --muted-foreground: 24 8% 42%;
+
+    --accent: 30 20% 88%;
+    --accent-foreground: 24 15% 12%;
+
+    --destructive: 0 70% 45%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 30 12% 86%;
+    --input: 30 12% 86%;
+    --ring: 24 15% 12%;
+
+    --radius: 0.625rem;
+
+    /* Decision tokens */
+    --decision-green: 142 55% 32%;
+    --decision-green-foreground: 0 0% 100%;
+    --decision-green-soft: 142 40% 94%;
+
+    --decision-yellow: 38 92% 50%;
+    --decision-yellow-foreground: 24 15% 12%;
+    --decision-yellow-soft: 45 90% 94%;
+
+    --decision-red: 358 65% 45%;
+    --decision-red-foreground: 0 0% 100%;
+    --decision-red-soft: 358 50% 95%;
+
+    --shadow-soft: 0 1px 2px hsl(24 15% 12% / 0.04), 0 8px 24px hsl(24 15% 12% / 0.06);
+    --shadow-card: 0 1px 3px hsl(24 15% 12% / 0.06), 0 12px 32px hsl(24 15% 12% / 0.08);
+
+    --sidebar-background: 36 33% 97%;
+    --sidebar-foreground: 24 15% 12%;
+    --sidebar-primary: 24 15% 12%;
+    --sidebar-primary-foreground: 36 33% 97%;
+    --sidebar-accent: 30 15% 92%;
+    --sidebar-accent-foreground: 24 15% 12%;
+    --sidebar-border: 30 12% 86%;
+    --sidebar-ring: 24 15% 12%;
+  }
+
+  .dark {
+    --background: 24 15% 8%;
+    --foreground: 36 33% 96%;
+    --card: 24 15% 10%;
+    --card-foreground: 36 33% 96%;
+    --popover: 24 15% 10%;
+    --popover-foreground: 36 33% 96%;
+    --primary: 36 33% 96%;
+    --primary-foreground: 24 15% 12%;
+    --secondary: 24 10% 16%;
+    --secondary-foreground: 36 33% 96%;
+    --muted: 24 10% 16%;
+    --muted-foreground: 30 10% 65%;
+    --accent: 24 10% 18%;
+    --accent-foreground: 36 33% 96%;
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 24 10% 20%;
+    --input: 24 10% 20%;
+    --ring: 36 33% 96%;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .font-display { font-family: 'Cormorant Garamond', Georgia, serif; }
+}
