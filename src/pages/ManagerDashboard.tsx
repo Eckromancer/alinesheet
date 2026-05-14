@@ -17,6 +17,7 @@ import {
   AssortmentMatrix,
   DoorHeatmap,
   CategoryRatios,
+  ConvictionRibbon,
   type DoorRow,
   type AggLite,
 } from "@/components/dashboard/Infographics";
@@ -876,48 +877,6 @@ function Figure({
   );
 }
 
-function ConvictionRibbon({
-  green,
-  yellow,
-  red,
-}: {
-  green: number;
-  yellow: number;
-  red: number;
-}) {
-  const total = Math.max(green + yellow + red, 1);
-  const items: Array<{ key: string; label: string; n: number; bar: string }> = [
-    { key: "g", label: "Conviction", n: green, bar: "bg-decision-green" },
-    { key: "y", label: "Consideration", n: yellow, bar: "bg-decision-yellow" },
-    { key: "r", label: "Pass", n: red, bar: "bg-decision-red" },
-  ];
-  return (
-    <div>
-      <div className="flex h-[3px] w-full overflow-hidden">
-        {items.map((it) => (
-          <div
-            key={it.key}
-            className={cn("h-full", it.bar)}
-            style={{ width: `${(it.n / total) * 100}%` }}
-          />
-        ))}
-      </div>
-      <div className="mt-4 grid grid-cols-3 gap-6">
-        {items.map((it) => (
-          <div key={it.key}>
-            <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
-              {it.label}
-            </p>
-            <p className="mt-1 font-display text-2xl tabular-nums">{it.n}</p>
-            <p className="text-[11px] text-muted-foreground">
-              {Math.round((it.n / total) * 100)}%
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function ConvictionLabel({ rec }: { rec: Recommendation }) {
   const tone =
