@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -105,11 +105,9 @@
     font-feature-settings: "ss01", "cv11";
   }
   .font-display {
-    font-family: 'Fraunces', 'Times New Roman', Georgia, serif;
-    font-optical-sizing: auto;
-    font-variation-settings: "opsz" 144, "SOFT" 30;
-    letter-spacing: -0.02em;
-    font-weight: 400;
+    font-family: 'Inter', 'Helvetica Neue', system-ui, sans-serif;
+    letter-spacing: -0.03em;
+    font-weight: 600;
   }
   .font-mono-tab {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -131,9 +129,10 @@
   .bracket-num::after  { content: " ]"; }
 
   .display-italic {
-    font-family: 'Fraunces', Georgia, serif;
+    font-family: 'Inter', 'Helvetica Neue', system-ui, sans-serif;
     font-style: italic;
-    font-variation-settings: "opsz" 144, "SOFT" 100;
+    letter-spacing: -0.02em;
+    font-weight: 400;
   }
 
   .numbered-row {
