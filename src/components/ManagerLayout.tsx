@@ -32,14 +32,12 @@ export default function ManagerLayout({ children }: Props) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-          <Link to="/manager" className="flex flex-col leading-tight">
-            <span className="font-display text-xl tracking-wide">
-              Style Compass
-            </span>
-            <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-              Management Portal
+      <header className="sticky top-0 z-30 border-b border-[hsl(var(--hairline))] bg-background/90 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5">
+          <Link to="/manager" className="flex items-baseline gap-3 leading-none">
+            <span className="font-display text-3xl tracking-tight">Style Compass</span>
+            <span className="hidden text-[10px] uppercase tracking-[0.28em] text-muted-foreground sm:inline">
+              Buying Intelligence
             </span>
           </Link>
           <Button
@@ -54,7 +52,7 @@ export default function ManagerLayout({ children }: Props) {
             Sign out
           </Button>
         </div>
-        <nav className="mx-auto flex max-w-6xl gap-1 px-3">
+        <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-3">
           {tabs.map((t) => (
             <NavLink
               key={t.to}
@@ -62,14 +60,14 @@ export default function ManagerLayout({ children }: Props) {
               end={t.end}
               className={({ isActive }) =>
                 cn(
-                  "relative flex items-center gap-1.5 px-3 py-2.5 text-sm transition-colors",
+                  "relative flex shrink-0 items-center gap-1.5 px-3 py-2.5 text-[13px] uppercase tracking-[0.18em] transition-colors",
                   isActive
-                    ? "text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-[2px] after:bg-foreground"
+                    ? "text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-[1.5px] after:bg-foreground"
                     : "text-muted-foreground hover:text-foreground"
                 )
               }
             >
-              <t.icon className="h-4 w-4" />
+              <t.icon className="h-3.5 w-3.5" />
               {t.label}
             </NavLink>
           ))}

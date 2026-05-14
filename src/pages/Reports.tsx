@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import ManagerLayout from "@/components/ManagerLayout";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, FileSpreadsheet, FileText } from "lucide-react";
+import { Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { downloadFile, toCSV } from "@/lib/exporting";
@@ -51,7 +50,6 @@ export default function Reports() {
   };
 
   const exportPriority = () => {
-    const pmap = new Map(products.map((p) => [p.id, p]));
     const agg = new Map<
       string,
       { green: number; yellow: number; red: number; units: number; client: number }
@@ -87,46 +85,60 @@ export default function Reports() {
     toast({ title: "Priority report ready" });
   };
 
+  const cards = [
+    {
+      eyebrow: "01",
+      title: "Submissions Export",
+      blurb:
+        "Every submitted line, by store and DSA, with sizes, units and client-backed notes.",
+      cta: exportSubmissions,
+    },
+    {
+      eyebrow: "02",
+      title: "Buyer Priority Report",
+      blurb:
+        "One row per style with G/Y/R counts, requested units, client-backed flags and weighted Buyer Priority Score.",
+      cta: exportPriority,
+    },
+  ];
+
   return (
     <ManagerLayout>
-      <div className="mb-6">
-        <h1 className="font-display text-3xl font-medium tracking-tight">Reports</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <header className="border-b border-[hsl(var(--hairline))] pb-10 pt-2">
+        <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground bracket-num">
+          Reports
+        </p>
+        <h1 className="mt-4 font-display text-[48px] font-normal leading-[0.95] tracking-tight sm:text-[64px]">
+          Take the buy <span className="display-italic">out of the room.</span>
+        </h1>
+        <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground">
           Buyer-ready exports drawn from live DSA submissions.
         </p>
-      </div>
+      </header>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card className="p-5 shadow-soft">
-          <div className="mb-3 flex items-center gap-2">
-            <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-              Submissions export
-            </h3>
+      <section className="mt-12 grid gap-x-10 gap-y-12 md:grid-cols-2">
+        {cards.map((c) => (
+          <div key={c.eyebrow} className="border-t border-foreground pt-5">
+            <span className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground bracket-num">
+              {c.eyebrow}
+            </span>
+            <h2 className="mt-3 font-display text-3xl leading-tight tracking-tight">
+              {c.title}
+            </h2>
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+              {c.blurb}
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-5 rounded-none border-foreground text-[11px] uppercase tracking-[0.22em]"
+              onClick={c.cta}
+            >
+              <Download className="mr-2 h-3.5 w-3.5" /> Download CSV
+            </Button>
           </div>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Every submitted line, by store and DSA, with sizes, units and client-backed notes.
-          </p>
-          <Button size="sm" variant="outline" onClick={exportSubmissions}>
-            <Download className="mr-1 h-4 w-4" /> Download CSV
-          </Button>
-        </Card>
-
-        <Card className="p-5 shadow-soft">
-          <div className="mb-3 flex items-center gap-2">
-            <FileText className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-              Buyer priority report
-            </h3>
-          </div>
-          <p className="mb-4 text-sm text-muted-foreground">
-            One row per style with G/Y/R counts, requested units, client-backed and Buyer Priority Score.
-          </p>
-          <Button size="sm" variant="outline" onClick={exportPriority}>
-            <Download className="mr-1 h-4 w-4" /> Download CSV
-          </Button>
-        </Card>
-      </div>
+        ))}
+      </section>
     </ManagerLayout>
   );
 }
