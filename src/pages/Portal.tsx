@@ -54,7 +54,7 @@ export default function Portal() {
             <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-full border border-border bg-card shadow-soft">
               <Lock className="h-5 w-5" />
             </div>
-            <p className="font-display text-2xl tracking-wide">
+            <p className="text-2xl" style={{ fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif", fontWeight: 600, letterSpacing: "-0.03em", lineHeight: 1, textRendering: "geometricPrecision" }}>
               A L / N E
             </p>
             <h1 className="mt-3 font-display text-4xl font-medium tracking-tight">
