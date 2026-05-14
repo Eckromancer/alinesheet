@@ -64,8 +64,10 @@ export default {
         },
       },
       fontFamily: {
-        display: ['"Cormorant Garamond"', 'Georgia', 'serif'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Fraunces', '"Times New Roman"', 'Georgia', 'serif'],
+        serif: ['Fraunces', '"Times New Roman"', 'Georgia', 'serif'],
+        sans: ['Inter', '"Helvetica Neue"', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
         soft: 'var(--shadow-soft)',

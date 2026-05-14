@@ -1,15 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Style Compass — refined neutral luxury palette */
+/* Style Compass — luxury buying-office intelligence palette */
 
 @layer base {
   :root {
-    --background: 36 33% 97%;          /* ivory */
-    --foreground: 24 15% 12%;          /* espresso */
+    --background: 38 32% 95%;          /* warm bone — fashion editorial */
+    --foreground: 24 18% 8%;           /* deep ink */
 
     --card: 0 0% 100%;
     --card-foreground: 24 15% 12%;
@@ -17,39 +17,48 @@
     --popover: 0 0% 100%;
     --popover-foreground: 24 15% 12%;
 
-    --primary: 24 15% 12%;             /* espresso */
+    --primary: 24 18% 10%;             /* espresso ink */
     --primary-foreground: 36 33% 97%;
 
     --secondary: 30 15% 92%;
     --secondary-foreground: 24 15% 12%;
 
-    --muted: 30 15% 94%;
+    --muted: 32 18% 93%;
     --muted-foreground: 24 8% 42%;
 
-    --accent: 30 20% 88%;
-    --accent-foreground: 24 15% 12%;
+    --accent: 14 56% 42%;              /* terracotta accent */
+    --accent-foreground: 36 33% 97%;
 
     --destructive: 0 70% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 30 12% 86%;
-    --input: 30 12% 86%;
-    --ring: 24 15% 12%;
+    --border: 30 14% 84%;
+    --input: 30 14% 84%;
+    --ring: 24 18% 10%;
 
-    --radius: 0.625rem;
+    --radius: 0.0625rem;
 
-    /* Decision tokens */
-    --decision-green: 142 55% 32%;
-    --decision-green-foreground: 0 0% 100%;
-    --decision-green-soft: 142 40% 94%;
+    /* Decision tokens — muted luxury palette */
+    --decision-green: 150 22% 28%;          /* pine / moss */
+    --decision-green-foreground: 36 33% 97%;
+    --decision-green-soft: 150 14% 92%;
 
-    --decision-yellow: 38 92% 50%;
+    --decision-yellow: 36 38% 46%;          /* ochre / champagne */
     --decision-yellow-foreground: 24 15% 12%;
-    --decision-yellow-soft: 45 90% 94%;
+    --decision-yellow-soft: 38 28% 92%;
 
-    --decision-red: 358 65% 45%;
-    --decision-red-foreground: 0 0% 100%;
-    --decision-red-soft: 358 50% 95%;
+    --decision-red: 8 42% 44%;              /* terracotta / oxblood */
+    --decision-red-foreground: 36 33% 97%;
+    --decision-red-soft: 8 30% 92%;
+
+    --hairline: 24 12% 76%;                 /* pale stone divider */
+
+    --editorial-terracotta: 14 56% 42%;
+    --editorial-stone: 30 14% 88%;
+    --editorial-clay: 18 22% 78%;
+    --editorial-ink: 24 18% 8%;
+    --editorial-bone: 38 32% 95%;
+    --editorial-mute: 24 8% 52%;
 
     --shadow-soft: 0 1px 2px hsl(24 15% 12% / 0.04), 0 8px 24px hsl(24 15% 12% / 0.06);
     --shadow-card: 0 1px 3px hsl(24 15% 12% / 0.06), 0 12px 32px hsl(24 15% 12% / 0.08);
@@ -93,6 +102,51 @@
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
+    font-feature-settings: "ss01", "cv11";
   }
-  .font-display { font-family: 'Cormorant Garamond', Georgia, serif; }
+  .font-display {
+    font-family: 'Fraunces', 'Times New Roman', Georgia, serif;
+    font-optical-sizing: auto;
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+    letter-spacing: -0.02em;
+    font-weight: 400;
+  }
+  .font-mono-tab {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-feature-settings: "tnum";
+  }
+  .swiss-rule { border-top: 1px solid hsl(var(--foreground)); }
+  .hairline { border-color: hsl(var(--hairline)); }
+
+  .meta-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: hsl(var(--muted-foreground));
+  }
+
+  .bracket-num::before { content: "[ "; }
+  .bracket-num::after  { content: " ]"; }
+
+  .display-italic {
+    font-family: 'Fraunces', Georgia, serif;
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "SOFT" 100;
+  }
+
+  .numbered-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid hsl(var(--hairline));
+  }
+  .numbered-row .index {
+    font-family: 'Inter Tight', sans-serif;
+    font-weight: 500;
+    color: hsl(var(--muted-foreground));
+    font-variant-numeric: tabular-nums;
+  }
 }

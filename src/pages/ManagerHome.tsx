@@ -1,57 +1,83 @@
 import { Link } from "react-router-dom";
 import ManagerLayout from "@/components/ManagerLayout";
-import { LayoutDashboard, ClipboardList, ArrowRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
+
+const cards = [
+  {
+    to: "/manager",
+    eyebrow: "01",
+    title: "Buyer Dashboard",
+    blurb:
+      "Door-weighted conviction, assortment matrix, category ratios and mixed-signal review across the season.",
+    cta: "Open dashboard",
+  },
+  {
+    to: "/manager/reports",
+    eyebrow: "02",
+    title: "Reports",
+    blurb:
+      "Buyer-ready exports drawn from live DSA submissions — submissions log and priority report.",
+    cta: "Open reports",
+  },
+  {
+    to: "/manager/governance",
+    eyebrow: "03",
+    title: "Governance",
+    blurb:
+      "Decision audit trail and oversight for the seasonal worksheet.",
+    cta: "Open governance",
+  },
+  {
+    to: "/",
+    eyebrow: "04",
+    title: "DSA Entry",
+    blurb:
+      "The store reviewer workflow used by DSAs to evaluate the season.",
+    cta: "Open DSA portal",
+  },
+];
 
 export default function ManagerHome() {
   return (
     <ManagerLayout>
-      <div className="mb-8">
-        <p className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+      <header className="border-b border-[hsl(var(--hairline))] pb-10 pt-2">
+        <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground bracket-num">
           Home
         </p>
-        <h1 className="mt-1 font-display text-3xl font-medium tracking-tight">
-          Choose a dashboard
+        <h1 className="mt-4 font-display text-[56px] font-normal leading-[0.95] tracking-tight sm:text-[72px]">
+          Buying <span className="display-italic">Intelligence.</span>
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Switch between the buyer-facing Management Portal and the DSA review experience.
+        <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground">
+          A curated workspace for the buying office — door-weighted signal, qualitative
+          forecasting and executive readouts beside the live DSA worksheet.
         </p>
-      </div>
+      </header>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Link
-          to="/manager"
-          className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:shadow-card"
-        >
-          <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background">
-            <LayoutDashboard className="h-5 w-5" />
-          </div>
-          <h2 className="font-display text-xl tracking-tight">Manager Portal</h2>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            Executive summary, priority scoring, governance, and reports across all 24 stores.
-          </p>
-          <span className="mt-4 inline-flex items-center gap-1 text-xs uppercase tracking-[0.18em] text-foreground">
-            Open dashboard
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </span>
-        </Link>
-
-        <Link
-          to="/"
-          className="group relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-soft transition-all hover:shadow-card"
-        >
-          <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background">
-            <ClipboardList className="h-5 w-5" />
-          </div>
-          <h2 className="font-display text-xl tracking-tight">DSA Portal</h2>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            Enter the store reviewer workflow used by DSAs and pilot testers to evaluate the 103 items.
-          </p>
-          <span className="mt-4 inline-flex items-center gap-1 text-xs uppercase tracking-[0.18em] text-foreground">
-            Open DSA portal
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-          </span>
-        </Link>
-      </div>
+      <section className="mt-12 grid gap-x-10 gap-y-12 sm:grid-cols-2">
+        {cards.map((c) => (
+          <Link
+            key={c.to}
+            to={c.to}
+            className="group block border-t border-foreground pt-5"
+          >
+            <div className="flex items-baseline justify-between">
+              <span className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground bracket-num">
+                {c.eyebrow}
+              </span>
+              <ArrowUpRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-foreground" />
+            </div>
+            <h2 className="mt-3 font-display text-3xl leading-tight tracking-tight">
+              {c.title}
+            </h2>
+            <p className="mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
+              {c.blurb}
+            </p>
+            <p className="mt-5 text-[11px] uppercase tracking-[0.24em] text-foreground underline-offset-8 group-hover:underline">
+              {c.cta} →
+            </p>
+          </Link>
+        ))}
+      </section>
     </ManagerLayout>
   );
 }
