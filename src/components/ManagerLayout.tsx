@@ -5,6 +5,7 @@ import { setLastTab } from "@/lib/last-tab";
 import { Button } from "@/components/ui/button";
 import { ClipboardList, LayoutDashboard, ShieldCheck, FileBarChart, LogOut, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ViewToggle from "@/components/ViewToggle";
 
 interface Props {
   children: ReactNode;
