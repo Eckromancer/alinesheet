@@ -64,8 +64,8 @@ export default {
         },
       },
       fontFamily: {
-        display: ['Fraunces', '"Times New Roman"', 'Georgia', 'serif'],
-        serif: ['Fraunces', '"Times New Roman"', 'Georgia', 'serif'],
+        display: ['Inter', '"Helvetica Neue"', 'system-ui', 'sans-serif'],
+        serif: ['Inter', '"Helvetica Neue"', 'system-ui', 'sans-serif'],
         sans: ['Inter', '"Helvetica Neue"', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
