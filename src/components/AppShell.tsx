@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ReactNode } from "react";
+import ViewToggle from "@/components/ViewToggle";
 
 interface Props {
   children: ReactNode;
@@ -20,7 +21,10 @@ export default function AppShell({ children, right, subtitle }: Props) {
               </span>
             )}
           </Link>
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">{right}</div>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <ViewToggle active="dsa" />
+            {right}
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-5 pb-32 pt-5">{children}</main>
