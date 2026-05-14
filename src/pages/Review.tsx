@@ -16,7 +16,7 @@ import { ChevronLeft, ChevronRight, FastForward, CheckCircle2, Loader2, Lock } f
 import { toast } from "sonner";
 
 const SIZES = [2, 4, 6, 8, 10, 12, 14, 16];
-const QUANTITY_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20];
+const QUANTITY_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 function isComplete(item: ReviewItem) {
   const r = item.review;
