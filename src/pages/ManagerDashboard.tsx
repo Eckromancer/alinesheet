@@ -3,9 +3,6 @@ import ManagerLayout from "@/components/ManagerLayout";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { STORES } from "@/lib/stores";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Collapsible,
   CollapsibleContent,
@@ -13,21 +10,16 @@ import {
 } from "@/components/ui/collapsible";
 import ProductImage from "@/components/ProductImage";
 import { Link } from "react-router-dom";
-import {
-  Store,
-  CircleAlert,
-  CheckCircle2,
-  Layers,
-  Sparkles,
-  Heart,
-  AlertTriangle,
-  Flame,
-  TrendingUp,
-  ChevronDown,
-  Crown,
-  ArrowUpRight,
-} from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  HeroRatio,
+  AssortmentMatrix,
+  DoorHeatmap,
+  CategoryRatios,
+  type DoorRow,
+  type AggLite,
+} from "@/components/dashboard/Infographics";
 
 type Review = Tables<"reviews">;
 type Product = Tables<"products">;
@@ -52,10 +44,6 @@ function hash(str: string): number {
   }
   return Math.abs(h);
 }
-function pick<T>(seed: number, arr: T[]): T {
-  return arr[seed % arr.length];
-}
-// deterministic [0,1)
 function rand(seed: number): number {
   return ((seed * 2654435761) >>> 0) / 0x100000000;
 }
@@ -64,42 +52,38 @@ function rand(seed: number): number {
 type StoreTier = "flagship" | "premium" | "core" | "small";
 interface StoreProfile {
   tier: StoreTier;
-  participation: number; // 0..1 likelihood a given style is reviewed
-  depthMult: number; // multiplier on requested units
-  vicWeight: number; // VIC / client-backed propensity
-  runwayAffinity: number; // 0..1 willingness to back editorial/runway
-  responseLag: number; // 0..1, higher = later/incomplete
+  participation: number;
+  depthMult: number;
+  vicWeight: number;
+  runwayAffinity: number;
+  responseLag: number;
 }
 
 const STORE_PROFILES: Record<string, StoreProfile> = {
-  // Flagships — deep buy, runway, high VIC
-  "1019": { tier: "flagship", participation: 0.99, depthMult: 1.55, vicWeight: 0.32, runwayAffinity: 0.92, responseLag: 0.05 }, // Michigan Avenue
-  "1011": { tier: "flagship", participation: 0.98, depthMult: 1.45, vicWeight: 0.30, runwayAffinity: 0.90, responseLag: 0.08 }, // Fashion Island
-  "1012": { tier: "flagship", participation: 0.97, depthMult: 1.35, vicWeight: 0.28, runwayAffinity: 0.88, responseLag: 0.10 }, // San Francisco
-  "1005": { tier: "flagship", participation: 0.99, depthMult: 1.60, vicWeight: 0.38, runwayAffinity: 0.95, responseLag: 0.04 }, // Bal Harbour
-  "1010": { tier: "flagship", participation: 0.97, depthMult: 1.40, vicWeight: 0.30, runwayAffinity: 0.90, responseLag: 0.08 }, // Los Angeles
-  // Premium luxury doors
-  "1002": { tier: "premium", participation: 0.93, depthMult: 1.20, vicWeight: 0.22, runwayAffinity: 0.72, responseLag: 0.15 }, // Northpark
-  "1014": { tier: "premium", participation: 0.92, depthMult: 1.15, vicWeight: 0.20, runwayAffinity: 0.70, responseLag: 0.18 }, // Westchester
-  "1020": { tier: "premium", participation: 0.92, depthMult: 1.10, vicWeight: 0.18, runwayAffinity: 0.68, responseLag: 0.18 }, // Boston
-  "1023": { tier: "premium", participation: 0.90, depthMult: 1.10, vicWeight: 0.18, runwayAffinity: 0.65, responseLag: 0.20 }, // Tysons
-  "1025": { tier: "premium", participation: 0.91, depthMult: 1.15, vicWeight: 0.20, runwayAffinity: 0.68, responseLag: 0.18 }, // Short Hills
-  "1009": { tier: "premium", participation: 0.88, depthMult: 1.05, vicWeight: 0.16, runwayAffinity: 0.60, responseLag: 0.22 }, // Northbrook
-  // Core volume doors
-  "1004": { tier: "core", participation: 0.82, depthMult: 0.95, vicWeight: 0.12, runwayAffinity: 0.45, responseLag: 0.30 }, // Houston
-  "1006": { tier: "core", participation: 0.80, depthMult: 0.90, vicWeight: 0.11, runwayAffinity: 0.42, responseLag: 0.32 }, // Atlanta
-  "1030": { tier: "core", participation: 0.80, depthMult: 0.90, vicWeight: 0.10, runwayAffinity: 0.40, responseLag: 0.32 }, // King Of Prussia
-  "1034": { tier: "core", participation: 0.78, depthMult: 0.95, vicWeight: 0.13, runwayAffinity: 0.45, responseLag: 0.30 }, // Coral Gables
-  "1038": { tier: "core", participation: 0.78, depthMult: 0.92, vicWeight: 0.12, runwayAffinity: 0.42, responseLag: 0.32 }, // Boca Raton
-  "1027": { tier: "core", participation: 0.76, depthMult: 0.85, vicWeight: 0.09, runwayAffinity: 0.38, responseLag: 0.40 }, // Denver
-  "1102": { tier: "core", participation: 0.74, depthMult: 0.82, vicWeight: 0.08, runwayAffinity: 0.35, responseLag: 0.45 }, // Charlotte
-  // Smaller / commercial-leaning doors (more incomplete, conservative)
-  "1001": { tier: "small", participation: 0.62, depthMult: 0.70, vicWeight: 0.06, runwayAffinity: 0.25, responseLag: 0.65 }, // Downtown
-  "1003": { tier: "small", participation: 0.60, depthMult: 0.70, vicWeight: 0.05, runwayAffinity: 0.22, responseLag: 0.68 }, // Ft. Worth
-  "1016": { tier: "small", participation: 0.66, depthMult: 0.72, vicWeight: 0.07, runwayAffinity: 0.28, responseLag: 0.55 }, // San Diego
-  "1029": { tier: "small", participation: 0.55, depthMult: 0.65, vicWeight: 0.05, runwayAffinity: 0.20, responseLag: 0.78 }, // Scottsdale
-  "1033": { tier: "small", participation: 0.62, depthMult: 0.70, vicWeight: 0.06, runwayAffinity: 0.25, responseLag: 0.65 }, // Troy
-  "1036": { tier: "small", participation: 0.64, depthMult: 0.72, vicWeight: 0.07, runwayAffinity: 0.28, responseLag: 0.58 }, // Orlando
+  "1019": { tier: "flagship", participation: 0.99, depthMult: 1.55, vicWeight: 0.32, runwayAffinity: 0.92, responseLag: 0.05 },
+  "1011": { tier: "flagship", participation: 0.98, depthMult: 1.45, vicWeight: 0.30, runwayAffinity: 0.90, responseLag: 0.08 },
+  "1012": { tier: "flagship", participation: 0.97, depthMult: 1.35, vicWeight: 0.28, runwayAffinity: 0.88, responseLag: 0.10 },
+  "1005": { tier: "flagship", participation: 0.99, depthMult: 1.60, vicWeight: 0.38, runwayAffinity: 0.95, responseLag: 0.04 },
+  "1010": { tier: "flagship", participation: 0.97, depthMult: 1.40, vicWeight: 0.30, runwayAffinity: 0.90, responseLag: 0.08 },
+  "1002": { tier: "premium", participation: 0.93, depthMult: 1.20, vicWeight: 0.22, runwayAffinity: 0.72, responseLag: 0.15 },
+  "1014": { tier: "premium", participation: 0.92, depthMult: 1.15, vicWeight: 0.20, runwayAffinity: 0.70, responseLag: 0.18 },
+  "1020": { tier: "premium", participation: 0.92, depthMult: 1.10, vicWeight: 0.18, runwayAffinity: 0.68, responseLag: 0.18 },
+  "1023": { tier: "premium", participation: 0.90, depthMult: 1.10, vicWeight: 0.18, runwayAffinity: 0.65, responseLag: 0.20 },
+  "1025": { tier: "premium", participation: 0.91, depthMult: 1.15, vicWeight: 0.20, runwayAffinity: 0.68, responseLag: 0.18 },
+  "1009": { tier: "premium", participation: 0.88, depthMult: 1.05, vicWeight: 0.16, runwayAffinity: 0.60, responseLag: 0.22 },
+  "1004": { tier: "core", participation: 0.82, depthMult: 0.95, vicWeight: 0.12, runwayAffinity: 0.45, responseLag: 0.30 },
+  "1006": { tier: "core", participation: 0.80, depthMult: 0.90, vicWeight: 0.11, runwayAffinity: 0.42, responseLag: 0.32 },
+  "1030": { tier: "core", participation: 0.80, depthMult: 0.90, vicWeight: 0.10, runwayAffinity: 0.40, responseLag: 0.32 },
+  "1034": { tier: "core", participation: 0.78, depthMult: 0.95, vicWeight: 0.13, runwayAffinity: 0.45, responseLag: 0.30 },
+  "1038": { tier: "core", participation: 0.78, depthMult: 0.92, vicWeight: 0.12, runwayAffinity: 0.42, responseLag: 0.32 },
+  "1027": { tier: "core", participation: 0.76, depthMult: 0.85, vicWeight: 0.09, runwayAffinity: 0.38, responseLag: 0.40 },
+  "1102": { tier: "core", participation: 0.74, depthMult: 0.82, vicWeight: 0.08, runwayAffinity: 0.35, responseLag: 0.45 },
+  "1001": { tier: "small", participation: 0.62, depthMult: 0.70, vicWeight: 0.06, runwayAffinity: 0.25, responseLag: 0.65 },
+  "1003": { tier: "small", participation: 0.60, depthMult: 0.70, vicWeight: 0.05, runwayAffinity: 0.22, responseLag: 0.68 },
+  "1016": { tier: "small", participation: 0.66, depthMult: 0.72, vicWeight: 0.07, runwayAffinity: 0.28, responseLag: 0.55 },
+  "1029": { tier: "small", participation: 0.55, depthMult: 0.65, vicWeight: 0.05, runwayAffinity: 0.20, responseLag: 0.78 },
+  "1033": { tier: "small", participation: 0.62, depthMult: 0.70, vicWeight: 0.06, runwayAffinity: 0.25, responseLag: 0.65 },
+  "1036": { tier: "small", participation: 0.64, depthMult: 0.72, vicWeight: 0.07, runwayAffinity: 0.28, responseLag: 0.58 },
 };
 
 function profileFor(code: string): StoreProfile {
@@ -119,9 +103,9 @@ type Category = "knitwear" | "outerwear" | "leather" | "evening" | "dress" | "ta
 interface ProductProfile {
   category: Category;
   priceTier: "commercial" | "mid" | "runway";
-  editorial: boolean; // statement/runway-coded styles
-  polarity: number; // 0..1, how divisive
-  commercialAppeal: number; // 0..1, broad consensus draw
+  editorial: boolean;
+  polarity: number;
+  commercialAppeal: number;
 }
 
 function classifyProduct(p: Product): ProductProfile {
@@ -145,11 +129,9 @@ function classifyProduct(p: Product): ProductProfile {
   const priceTier: ProductProfile["priceTier"] =
     price >= 4000 ? "runway" : price >= 2000 ? "mid" : "commercial";
 
-  // "editorial" — statement pieces flagships chase
   const editorialKeywords = /(degradé|degrade|appaloosa|intarsia|fringe|guipure|sequin|lurex|asymmetrical|deconstructed|reversible|plaid|tweed|bouclé|boucle|horsehair)/.test(d);
   const editorial = editorialKeywords || (priceTier === "runway" && (category === "leather" || category === "evening" || category === "outerwear"));
 
-  // polarity heuristic: editorial leather/evening/runway most polarizing; knit core least
   const seed = hash(p.style_number);
   const basePol =
     category === "knitwear" ? 0.10 :
@@ -157,17 +139,16 @@ function classifyProduct(p: Product): ProductProfile {
     category === "tailoring" ? 0.20 :
     category === "dress" ? (editorial ? 0.55 : 0.30) :
     category === "leather" ? 0.65 :
-    /* evening */ 0.75;
+    0.75;
   const polarity = Math.min(0.95, basePol + rand(seed) * 0.20);
 
-  // commercial appeal: knit + tailoring + outerwear at lower price = strong consensus
   const baseAppeal =
     category === "knitwear" ? 0.85 :
     category === "outerwear" ? (priceTier === "commercial" ? 0.80 : priceTier === "mid" ? 0.65 : 0.40) :
     category === "tailoring" ? 0.75 :
     category === "dress" ? (priceTier === "commercial" ? 0.70 : priceTier === "mid" ? 0.55 : 0.35) :
     category === "leather" ? 0.45 :
-    /* evening */ 0.30;
+    0.30;
   const commercialAppeal = Math.max(0.05, Math.min(0.95, baseAppeal - (editorial ? 0.15 : 0) + (rand(seed >> 3) - 0.5) * 0.15));
 
   return { category, priceTier, editorial, polarity, commercialAppeal };
@@ -180,13 +161,11 @@ function decideReview(
   prof: ProductProfile,
   seed: number
 ): SyntheticReview | null {
-  // Participation: smaller stores skip more, especially on runway/editorial
   let participate = storeProfile.participation;
   if (prof.editorial) participate -= (1 - storeProfile.runwayAffinity) * 0.25;
   if (prof.priceTier === "runway") participate -= (1 - storeProfile.runwayAffinity) * 0.15;
   if (rand(seed) > Math.max(0.25, participate)) return null;
 
-  // Probability of green based on store + product alignment
   const flagshipBoost = storeProfile.tier === "flagship" ? 0.20 : storeProfile.tier === "premium" ? 0.08 : 0;
   const editorialPenaltySmall =
     prof.editorial && (storeProfile.tier === "small" || storeProfile.tier === "core") ? 0.30 : 0;
@@ -195,20 +174,16 @@ function decideReview(
 
   let pGreen = prof.commercialAppeal * 0.55 + storeProfile.runwayAffinity * 0.25 + flagshipBoost;
   pGreen -= editorialPenaltySmall + runwayPenaltySmall;
-  // Polarity pulls vote to extremes (less yellow)
   const pol = prof.polarity;
-  // For polarizing styles, flagships skew green, small skew red
   if (pol > 0.5) {
     if (storeProfile.tier === "flagship") pGreen += 0.15;
     if (storeProfile.tier === "small") pGreen -= 0.18;
   }
   pGreen = Math.max(0.05, Math.min(0.92, pGreen));
 
-  // Yellow share shrinks when polarity is high
   const yellowShare = Math.max(0.05, 0.35 - pol * 0.30);
   const remaining = 1 - pGreen;
   const pYellow = remaining * yellowShare;
-  const pRed = remaining - pYellow;
 
   const r = rand(seed >> 5);
   let dec: Decision;
@@ -216,14 +191,8 @@ function decideReview(
   else if (r < pGreen + pYellow) dec = "yellow";
   else dec = "red";
 
-  // Units — luxury RTW depth: shallow per door, selective, restrained.
-  // Individual style requests rarely exceed mid-single-digits; flagships go
-  // deeper only on aligned editorial/runway statements; small doors stay
-  // conservative; evening/leather are test-buy depth almost everywhere.
   let units = 0;
   if (dec === "green") {
-    // Per-door luxury depth bands (min..max) — operationally believable.
-    // Knitwear/tailoring = broadest depth; evening/leather = test buys.
     const bands: Record<Category, [number, number]> = {
       knitwear:  [2, 5],
       outerwear: prof.priceTier === "runway" ? [1, 2] : [2, 4],
@@ -235,59 +204,46 @@ function decideReview(
     const [lo, hi] = bands[prof.category];
     const raw = lo + rand(seed >> 9) * (hi - lo);
 
-    // Store-tier depth posture
     let tierMult = 1;
     if (storeProfile.tier === "flagship") {
-      // Flagships: deeper, but ONLY on aligned statement/editorial pieces.
-      // On commercial basics they buy normal depth, not inflated.
       tierMult = prof.editorial || prof.priceTier === "runway" ? 1.6 : 1.1;
     } else if (storeProfile.tier === "premium") {
       tierMult = prof.editorial ? 1.15 : 1.0;
     } else if (storeProfile.tier === "core") {
-      // Core doors lean commercial — penalize editorial depth
       tierMult = prof.editorial ? 0.7 : 0.95;
     } else {
-      // small doors: conservative across the board, very shy on editorial
       tierMult = prof.editorial ? 0.5 : 0.8;
     }
 
     units = Math.max(1, Math.round(raw * tierMult));
 
-    // Merchant restraint: occasional "love it, hold the depth" test buy
     if (prof.editorial && rand(seed >> 13) < 0.22) {
       units = Math.max(1, Math.round(units * 0.5));
     }
-    // Flagship statement concentration: rare deep bet on a hero style
     if (
       storeProfile.tier === "flagship" &&
       prof.editorial &&
       prof.priceTier === "runway" &&
       rand(seed >> 15) < 0.12
     ) {
-      units += 2 + Math.floor(rand(seed >> 21) * 3); // +2..+4
+      units += 2 + Math.floor(rand(seed >> 21) * 3);
     }
 
-    // Hard luxury cap per door per style — keeps individual asks believable
     const perDoorCap =
       storeProfile.tier === "flagship" ? 12 :
       storeProfile.tier === "premium"  ? 8  :
       storeProfile.tier === "core"     ? 6  : 4;
     units = Math.min(units, perDoorCap);
   } else if (dec === "yellow") {
-    // Yellow = soft maybe; rarely a unit ask, capped at 2 trial pieces.
     units = rand(seed >> 11) < 0.22 ? (rand(seed >> 17) < 0.5 ? 1 : 2) : 0;
-  } else {
-    units = 0;
   }
 
-  // VIC / client-backed
   let vicProb = storeProfile.vicWeight;
   if (prof.priceTier === "runway") vicProb += 0.08;
   if (prof.category === "evening" || prof.category === "leather") vicProb += 0.05;
   if (storeProfile.tier === "flagship" && prof.editorial) vicProb += 0.10;
   const clientBacked = dec !== "red" && rand(seed >> 19) < Math.min(0.55, vicProb);
 
-  // Notes — more for polarizing/runway/leather
   const noteProb = 0.10 + pol * 0.25 + (prof.priceTier === "runway" ? 0.10 : 0);
   const hasNotes = rand(seed >> 23) < noteProb;
 
@@ -319,7 +275,6 @@ function buildSynthetic(products: Product[]): SyntheticReview[] {
   return out;
 }
 
-// Convert a real review row to the same shape used for aggregation.
 function fromReal(r: Review): SyntheticReview | null {
   if (r.submission_status !== "submitted" || !r.decision_status) return null;
   return {
@@ -406,24 +361,14 @@ function aggregate(products: Product[], rows: SyntheticReview[]): ProductAgg[] {
     const notes = list.filter((r) => r.has_notes).length;
     const total = list.length;
 
-    // Weighted scoring — flagships count meaningfully more than small doors
-    const greenW = list
-      .filter((r) => r.decision_status === "green")
-      .reduce((a, r) => a + weightOf(r.store), 0);
-    const yellowW = list
-      .filter((r) => r.decision_status === "yellow")
-      .reduce((a, r) => a + weightOf(r.store), 0);
-    const redW = list
-      .filter((r) => r.decision_status === "red")
-      .reduce((a, r) => a + weightOf(r.store), 0);
-    const clientW = list
-      .filter((r) => r.client_backed)
-      .reduce((a, r) => a + weightOf(r.store), 0);
+    const greenW = list.filter((r) => r.decision_status === "green").reduce((a, r) => a + weightOf(r.store), 0);
+    const yellowW = list.filter((r) => r.decision_status === "yellow").reduce((a, r) => a + weightOf(r.store), 0);
+    const redW = list.filter((r) => r.decision_status === "red").reduce((a, r) => a + weightOf(r.store), 0);
+    const clientW = list.filter((r) => r.client_backed).reduce((a, r) => a + weightOf(r.store), 0);
 
     const base = green * 3 + yellow * 1 + red * -1;
     const score = base + units * 0.5 + clientBacked * 2;
-    const weightedScore =
-      greenW * 3 + yellowW * 1 + redW * -1 + weightedUnits * 0.5 + clientW * 2;
+    const weightedScore = greenW * 3 + yellowW * 1 + redW * -1 + weightedUnits * 0.5 + clientW * 2;
 
     const consensus = total > 0 ? Math.max(green, yellow, red) / total : 0;
     const greenRate = total > 0 ? green / total : 0;
@@ -437,7 +382,6 @@ function aggregate(products: Product[], rows: SyntheticReview[]): ProductAgg[] {
     if (notes >= 5 || (clientBacked >= 3 && notes >= 2)) flags.push("Buyer review needed");
     if (flagshipGreen >= 3 && red >= 4) flags.push("Flagship support / broad rejection");
 
-    // Recommendation logic
     let recommendation: Recommendation;
     const flagshipBacked = flagshipGreen >= 2 || flagshipUnits >= 6;
     if (greenRate >= 0.6 && flagshipBacked && consensus >= 0.55) {
@@ -518,7 +462,6 @@ export default function ManagerDashboard() {
     const real = reviews.map(fromReal).filter(Boolean) as SyntheticReview[];
     const distinctStores = new Set(real.map((r) => r.store)).size;
     if (distinctStores >= 5 || products.length === 0) return { rows: real, useMock: false };
-    // Augment: keep real rows but layer in mock data for stores not yet reporting
     const realStores = new Set(real.map((r) => r.store));
     const mocked = buildSynthetic(products).filter((m) => !realStores.has(m.store));
     return { rows: [...real, ...mocked], useMock: true };
@@ -544,15 +487,12 @@ export default function ManagerDashboard() {
 
   const totals = useMemo(() => {
     const submittedStores = storeStats.filter((s) => s.submitted > 0 && !s.code.startsWith("P")).length;
-    const incompleteStores = storeStats.filter(
-      (s) => !s.code.startsWith("P") && !s.complete
-    ).length;
     const green = rows.filter((r) => r.decision_status === "green").length;
     const yellow = rows.filter((r) => r.decision_status === "yellow").length;
     const red = rows.filter((r) => r.decision_status === "red").length;
     const units = rows.reduce((a, r) => a + (r.requested_bulk_units || 0), 0);
     const clientBacked = rows.filter((r) => r.client_backed).length;
-    return { submittedStores, incompleteStores, green, yellow, red, units, clientBacked };
+    return { submittedStores, green, yellow, red, units, clientBacked };
   }, [rows, storeStats]);
 
   const aggs = useMemo(() => aggregate(products, rows), [products, rows]);
@@ -570,467 +510,647 @@ export default function ManagerDashboard() {
       return { category: c, styles: list.length, units, greenStyles };
     });
   }, [aggs]);
-  const highestDemand = useMemo(() => [...aggs].sort((a, b) => b.units - a.units).slice(0, 5), [aggs]);
-  const polarizing = useMemo(
+
+  const strongBuy = useMemo(
     () =>
       [...aggs]
-        .filter((a) => a.total >= 5)
-        .sort((a, b) => {
-          const ap = Math.min(a.green, a.red) * a.yellow;
-          const bp = Math.min(b.green, b.red) * b.yellow;
-          return bp - ap;
-        })
-        .slice(0, 5),
+        .filter((a) => a.recommendation === "Buy with confidence" || a.recommendation === "Increase depth")
+        .sort((a, b) => b.weightedScore - a.weightedScore)
+        .slice(0, 3),
     [aggs]
   );
-  const highRiskHighDemand = useMemo(
+  const mixedSignal = useMemo(
     () =>
       [...aggs]
-        .filter((a) => a.units >= 8 && a.green / Math.max(a.total, 1) < 0.55)
+        .filter(
+          (a) =>
+            a.recommendation === "Flag for review" ||
+            a.flags.includes("Polarizing style") ||
+            a.flags.includes("High units / low confidence")
+        )
         .sort((a, b) => b.units - a.units)
-        .slice(0, 5),
+        .slice(0, 4),
     [aggs]
   );
-  const depthByStore = useMemo(() => {
-    const m = new Map<string, number>();
-    rows.forEach((r) => m.set(r.store, (m.get(r.store) ?? 0) + (r.requested_bulk_units || 0)));
-    return Array.from(m.entries())
-      .map(([store, units]) => ({ store, units }))
-      .sort((a, b) => b.units - a.units)
-      .slice(0, 6);
-  }, [rows]);
-  const incompleteByStore = useMemo(
+  const clientHighlights = useMemo(
     () =>
-      storeStats
-        .filter((s) => !s.code.startsWith("P") && !s.complete)
-        .map((s) => ({
-          store: s.label,
-          submitted: s.submitted,
-          target: products.length,
-        }))
-        .sort((a, b) => a.submitted - b.submitted)
-        .slice(0, 8),
-    [storeStats, products.length]
+      [...aggs]
+        .filter((a) => a.clientBacked > 0)
+        .sort((a, b) => b.clientBacked - a.clientBacked || b.units - a.units)
+        .slice(0, 4),
+    [aggs]
   );
+
+  const realStoresAll = useMemo(
+    () => storeStats.filter((s) => !s.code.startsWith("P")),
+    [storeStats]
+  );
+  const totalDecisions = totals.green + totals.yellow + totals.red;
+
+  const aggsLite: AggLite[] = useMemo(
+    () =>
+      aggs.map((a) => ({
+        product: a.product,
+        green: a.green,
+        yellow: a.yellow,
+        red: a.red,
+        units: a.units,
+        total: a.total,
+        recommendation: a.recommendation,
+        category: a.category,
+      })),
+    [aggs]
+  );
+
+  const doorRows: DoorRow[] = useMemo(() => {
+    const map = new Map<string, DoorRow>();
+    rows.forEach((r) => {
+      const cur =
+        map.get(r.store) ?? {
+          store: r.store,
+          tier: tierOf(r.store),
+          green: 0,
+          yellow: 0,
+          red: 0,
+          units: 0,
+        };
+      if (r.decision_status === "green") cur.green += 1;
+      else if (r.decision_status === "yellow") cur.yellow += 1;
+      else cur.red += 1;
+      cur.units += r.requested_bulk_units || 0;
+      map.set(r.store, cur);
+    });
+    const tierOrder: Record<DoorRow["tier"], number> = {
+      flagship: 0,
+      premium: 1,
+      core: 2,
+      small: 3,
+    };
+    return Array.from(map.values()).sort((a, b) => {
+      const t = tierOrder[a.tier] - tierOrder[b.tier];
+      if (t !== 0) return t;
+      return b.units - a.units;
+    });
+  }, [rows]);
+
+  const buyCount = aggs.filter(
+    (a) => a.recommendation === "Buy with confidence" || a.recommendation === "Increase depth"
+  ).length;
 
   return (
     <ManagerLayout>
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-3xl font-medium tracking-tight">Buyer Dashboard</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Aggregated DSA insight across {STORES.filter((s) => !s.code.startsWith("P")).length} doors
+      {/* ---------- Masthead ---------- */}
+      <header className="border-b border-[hsl(var(--hairline))] pb-10 pt-2">
+        <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
+          <div className="max-w-3xl">
+            <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground bracket-num">
+              Season — Buyer Intelligence
+            </p>
+            <h1 className="mt-4 font-display text-[64px] font-normal leading-[0.92] tracking-tight sm:text-[88px]">
+              The <span className="display-italic">Buy.</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground">
+              A curated view of door-level conviction across {realStoresAll.length} reviewing
+              locations. Weighted toward flagship signal and client-backed intent.
+            </p>
+          </div>
+          <div className="flex items-center gap-6 self-end">
             {useMock && (
-              <span className="ml-2 inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-widest text-muted-foreground">
+              <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
                 Demo data layered
               </span>
             )}
+            <Link
+              to="/manager/submissions"
+              className="text-[11px] uppercase tracking-[0.24em] text-foreground underline-offset-8 hover:underline"
+            >
+              Raw submissions
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* ---------- Demand Overview ---------- */}
+      <Section eyebrow="01" title="Demand Overview">
+        <div className="grid gap-x-10 gap-y-10 lg:grid-cols-[1.1fr_1fr]">
+          <HeroRatio
+            numerator={buyCount}
+            denominator={products.length || aggs.length}
+            label="Conviction · styles to buy"
+            caption="Styles where flagship-weighted signal supports a buy or deeper depth — the editorial spine of the seasonal order."
+          />
+          <div className="grid grid-cols-2 gap-y-10 self-end">
+            <Figure label="Doors Reporting" value={totals.submittedStores} suffix={` / ${realStoresAll.length}`} />
+            <Figure label="Requested Depth" value={totals.units} suffix=" u" />
+            <Figure label="Decisions" value={totalDecisions} />
+            <Figure label="VIC-Backed" value={totals.clientBacked} />
+          </div>
+        </div>
+
+        <div className="mt-12 border-t border-[hsl(var(--hairline))] pt-8">
+          <p className="mb-4 text-[10px] uppercase tracking-[0.28em] text-muted-foreground bracket-num">
+            Conviction Mix
           </p>
+          <ConvictionRibbon green={totals.green} yellow={totals.yellow} red={totals.red} />
         </div>
-        <Link
-          to="/manager/submissions"
-          className="text-xs uppercase tracking-widest text-muted-foreground hover:text-foreground"
-        >
-          View raw submissions →
-        </Link>
-      </div>
+      </Section>
 
-      {/* KPI cards */}
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat icon={Store} label="Stores submitted" value={totals.submittedStores} />
-        <Stat icon={CircleAlert} label="Stores incomplete" value={totals.incompleteStores} tone="warn" />
-        <Stat icon={Layers} label="Total requested units" value={totals.units} />
-        <Stat icon={Heart} label="Client-backed requests" value={totals.clientBacked} tone="accent" />
-        <Stat icon={CheckCircle2} label="Green selections" value={totals.green} tone="green" />
-        <Stat icon={Sparkles} label="Yellow selections" value={totals.yellow} tone="yellow" />
-        <Stat icon={AlertTriangle} label="Red selections" value={totals.red} tone="red" />
-        <Stat
-          icon={TrendingUp}
-          label="Total decisions"
-          value={totals.green + totals.yellow + totals.red}
-        />
-      </div>
+      {/* ---------- Assortment Matrix ---------- */}
+      <Section
+        eyebrow="02"
+        title="Assortment Matrix"
+        subtitle="Every style in the season as a single cell. Color is recommendation, opacity is requested depth."
+      >
+        {loading || aggsLite.length === 0 ? (
+          <SkeletonNote />
+        ) : (
+          <AssortmentMatrix aggs={aggsLite} />
+        )}
+      </Section>
 
-      {/* Insight panels */}
-      <div className="mb-6 grid gap-4 lg:grid-cols-2">
-        <Panel title="Highest demand styles" icon={Flame}>
-          <MiniList
-            items={highestDemand.map((a) => ({
-              primary: a.product.style_number,
-              secondary: a.product.long_style_desc,
-              right: `${a.units} units`,
-            }))}
-          />
-        </Panel>
-        <Panel title="Most polarizing styles" icon={AlertTriangle}>
-          <MiniList
-            items={polarizing.map((a) => ({
-              primary: a.product.style_number,
-              secondary: `${a.green}G · ${a.yellow}Y · ${a.red}R`,
-              right: `${a.total} votes`,
-            }))}
-          />
-        </Panel>
-        <Panel title="High units · low confidence" icon={CircleAlert}>
-          <MiniList
-            items={highRiskHighDemand.map((a) => ({
-              primary: a.product.style_number,
-              secondary: `${a.units} units · ${a.green}G ${a.yellow}Y ${a.red}R`,
-              right: "Review",
-            }))}
-          />
-        </Panel>
-        <Panel title="Stores requesting most depth" icon={TrendingUp}>
-          <MiniList
-            items={depthByStore.map((d) => ({
-              primary: d.store,
-              secondary: "Total units requested",
-              right: `${d.units}`,
-            }))}
-          />
-        </Panel>
-        <Panel title="Incomplete submissions by store" icon={CircleAlert} className="lg:col-span-2">
-          {incompleteByStore.length === 0 ? (
-            <p className="text-sm text-muted-foreground">All stores complete.</p>
-          ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {incompleteByStore.map((s) => (
-                <div
-                  key={s.store}
-                  className="flex items-center justify-between rounded-md border border-border bg-muted/30 px-3 py-2 text-sm"
-                >
-                  <span className="truncate">{s.store}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {s.submitted} / {s.target || "—"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </Panel>
-      </div>
+      {/* ---------- Category Ratios ---------- */}
+      <Section
+        eyebrow="03"
+        title="By Category"
+        subtitle="Green-rate and depth distribution across the assortment."
+      >
+        <CategoryRatios rows={categoryBreakdown} />
+      </Section>
 
-      {/* Category assortment balance */}
-      <Card className="mb-6 p-4 shadow-soft">
-        <div className="mb-3 flex items-center gap-2">
-          <Layers className="h-4 w-4 text-muted-foreground" />
-          <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-            Assortment balance by category
-          </h3>
-        </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {categoryBreakdown.map((c) => {
-            const totalUnits = categoryBreakdown.reduce((s, x) => s + x.units, 0) || 1;
-            const pct = Math.round((c.units / totalUnits) * 100);
+      {/* ---------- Door Heatmap ---------- */}
+      <Section
+        eyebrow="04"
+        title="Door Sentiment"
+        subtitle="Each door's full conviction mix, sorted by tier. Bar below = depth share."
+      >
+        {doorRows.length === 0 ? (
+          <EmptyNote>No reviews recorded.</EmptyNote>
+        ) : (
+          <DoorHeatmap rows={doorRows} />
+        )}
+      </Section>
+
+      {/* ---------- Strong Buy ---------- */}
+      <Section eyebrow="05" title="Strong Buy" subtitle="Highest weighted conviction across the network.">
+        {loading ? (
+          <SkeletonNote />
+        ) : strongBuy.length === 0 ? (
+          <EmptyNote>No styles meet the conviction threshold yet.</EmptyNote>
+        ) : (
+          <div className="grid gap-x-10 gap-y-12 md:grid-cols-3">
+            {strongBuy.map((a, i) => (
+              <EditorialFeature key={a.product.id} a={a} index={i + 1} />
+            ))}
+          </div>
+        )}
+      </Section>
+
+      {/* ---------- Mixed Signal ---------- */}
+      <Section eyebrow="06" title="Mixed Signal" subtitle="Polarizing assortment requiring buyer judgment.">
+        {mixedSignal.length === 0 ? (
+          <EmptyNote>The network is in alignment. No styles flagged.</EmptyNote>
+        ) : (
+          <div className="grid gap-x-12 gap-y-8 md:grid-cols-2">
+            {mixedSignal.map((a) => (
+              <EditorialRow key={a.product.id} a={a} kind="mixed" />
+            ))}
+          </div>
+        )}
+      </Section>
+
+      {/* ---------- Client Demand ---------- */}
+      <Section eyebrow="07" title="Client Demand" subtitle="Styles with VIC-backed orders attached.">
+        {clientHighlights.length === 0 ? (
+          <EmptyNote>No client-backed requests on file.</EmptyNote>
+        ) : (
+          <div className="grid gap-x-12 gap-y-8 md:grid-cols-2">
+            {clientHighlights.map((a) => (
+              <EditorialRow key={a.product.id} a={a} kind="client" />
+            ))}
+          </div>
+        )}
+      </Section>
+
+      {/* ---------- Door Status ---------- */}
+      <Section eyebrow="08" title="Door Status" subtitle="Submission completeness across reviewing locations.">
+        <div className="grid grid-cols-1 gap-x-10 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+          {realStoresAll.map((s) => {
+            const submitted = s.submitted;
+            const target = products.length;
+            const pct = target ? Math.min(100, (submitted / target) * 100) : 0;
+            const status = s.complete
+              ? "Complete"
+              : submitted === 0
+              ? "Pending"
+              : "In progress";
             return (
-              <div key={c.category} className="rounded-md border border-border bg-muted/30 p-3">
-                <div className="mb-1 flex items-baseline justify-between">
-                  <span className="text-sm font-medium capitalize">{c.category}</span>
-                  <span className="text-xs text-muted-foreground">{c.styles} styles</span>
+              <div
+                key={s.code}
+                className="flex items-center justify-between border-b border-[hsl(var(--hairline))] py-3"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm">{s.label}</p>
+                  <p className="mt-0.5 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+                    {status}
+                  </p>
                 </div>
-                <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full bg-primary"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{c.units} units · {pct}%</span>
-                  <span>{c.greenStyles} positive</span>
+                <div className="ml-4 flex items-center gap-3">
+                  <div className="h-px w-20 bg-[hsl(var(--hairline))]">
+                    <div
+                      className="h-px bg-foreground"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className="w-10 text-right font-display text-sm tabular-nums">
+                    {submitted}
+                  </span>
                 </div>
               </div>
             );
           })}
         </div>
-      </Card>
+      </Section>
 
-      {/* Buyer-friendly expandable ranking */}
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-display text-xl">Ranked by Buyer Priority</h2>
-        <span className="text-xs text-muted-foreground hidden sm:inline">
-          Flagship-weighted · tap a card to expand
-        </span>
-      </div>
-
-      {loading ? (
-        <Card className="p-6 text-center text-muted-foreground">Loading…</Card>
-      ) : (
-        <div className="grid gap-3">
-          {ranked.map((a, idx) => (
-            <ProductCard key={a.product.id} a={a} rank={idx + 1} />
-          ))}
+      {/* ---------- Reports & Export ---------- */}
+      <Section eyebrow="09" title="Reports & Export" subtitle="Take the buy out of the room.">
+        <div className="flex flex-wrap items-center justify-between gap-6 border-t border-[hsl(var(--hairline))] pt-8">
+          <p className="max-w-md text-sm leading-relaxed text-muted-foreground">
+            Generate the seasonal worksheet, the buyer brief, and the door-level export from a
+            single, version-controlled source.
+          </p>
+          <Link
+            to="/manager/reports"
+            className="text-[11px] uppercase tracking-[0.28em] text-foreground underline-offset-8 hover:underline"
+          >
+            Open reports →
+          </Link>
         </div>
-      )}
+      </Section>
+
+      {/* ---------- Index ---------- */}
+      <Section
+        eyebrow="10"
+        title="Index"
+        subtitle="The full assortment, ranked by flagship-weighted conviction."
+      >
+        {loading ? (
+          <SkeletonNote />
+        ) : (
+          <div className="divide-y divide-[hsl(var(--hairline))] border-y border-[hsl(var(--hairline))]">
+            {ranked.map((a, idx) => (
+              <IndexRow key={a.product.id} a={a} rank={idx + 1} />
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <footer className="mt-20 border-t border-[hsl(var(--hairline))] py-8 text-center">
+        <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground">
+          Style Compass · Buyer Intelligence
+        </p>
+      </footer>
     </ManagerLayout>
   );
 }
 
-// ---------- Product card ----------
-function recommendationStyle(rec: Recommendation): { cls: string; icon: typeof Crown } {
-  switch (rec) {
-    case "Buy with confidence":
-      return { cls: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300", icon: CheckCircle2 };
-    case "Increase depth":
-      return { cls: "border-emerald-600/40 bg-emerald-600/15 text-emerald-700 dark:text-emerald-300", icon: TrendingUp };
-    case "Test buy":
-      return { cls: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300", icon: Sparkles };
-    case "Flag for review":
-      return { cls: "border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300", icon: AlertTriangle };
-    case "Pass":
-      return { cls: "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300", icon: CircleAlert };
-  }
-}
+// =====================================================================
+// Layout primitives
+// =====================================================================
 
-function tierBadgeCls(t: StoreTier): string {
-  switch (t) {
-    case "flagship":
-      return "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300";
-    case "premium":
-      return "border-violet-500/40 bg-violet-500/10 text-violet-700 dark:text-violet-300";
-    case "core":
-      return "border-border bg-muted text-foreground";
-    case "small":
-      return "border-border bg-muted/40 text-muted-foreground";
-  }
-}
-
-function ProductCard({ a, rank }: { a: ProductAgg; rank: number }) {
-  const [open, setOpen] = useState(false);
-  const rs = recommendationStyle(a.recommendation);
-  const RecIcon = rs.icon;
-  const total = Math.max(a.green + a.yellow + a.red, 1);
+function Section({
+  eyebrow,
+  title,
+  subtitle,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <Card className="overflow-hidden shadow-soft">
-      <Collapsible open={open} onOpenChange={setOpen}>
-        <CollapsibleTrigger asChild>
-          <button className="flex w-full items-stretch gap-3 p-3 text-left hover:bg-muted/30 sm:gap-4 sm:p-4">
-            <div className="w-20 shrink-0 sm:w-24">
-              <ProductImage src={a.product.image_url} alt={a.product.style_number} />
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                      #{rank}
-                    </span>
-                    <span className="font-medium">{a.product.style_number}</span>
-                    <span className="text-xs capitalize text-muted-foreground">
-                      · {a.category}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                    {a.product.long_style_desc}
-                  </p>
-                </div>
-                <ChevronDown
-                  className={cn(
-                    "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
-                    open && "rotate-180"
-                  )}
-                />
-              </div>
-
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Badge variant="outline" className={cn("gap-1 text-[10px] uppercase tracking-wider", rs.cls)}>
-                  <RecIcon className="h-3 w-3" />
-                  {a.recommendation}
-                </Badge>
-                {a.flagshipUnits > 0 && (
-                  <Badge variant="outline" className="gap-1 border-amber-500/40 bg-amber-500/10 text-[10px] uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                    <Crown className="h-3 w-3" />
-                    Flagship {a.flagshipUnits}u
-                  </Badge>
-                )}
-                {a.clientBacked > 0 && (
-                  <Badge variant="outline" className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-[10px] uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-                    <Heart className="h-3 w-3" />
-                    {a.clientBacked} VIC
-                  </Badge>
-                )}
-              </div>
-
-              {/* Decision distribution bar */}
-              <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                <div className="h-full bg-emerald-500" style={{ width: `${(a.green / total) * 100}%` }} />
-                <div className="h-full bg-amber-500" style={{ width: `${(a.yellow / total) * 100}%` }} />
-                <div className="h-full bg-rose-500" style={{ width: `${(a.red / total) * 100}%` }} />
-              </div>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
-                <span><span className="text-emerald-600 dark:text-emerald-400">●</span> {a.green}G</span>
-                <span><span className="text-amber-600 dark:text-amber-400">●</span> {a.yellow}Y</span>
-                <span><span className="text-rose-600 dark:text-rose-400">●</span> {a.red}R</span>
-                <span>· {a.units} units</span>
-                <span className="ml-auto font-display text-sm text-foreground">{a.weightedScore}</span>
-              </div>
-            </div>
-          </button>
-        </CollapsibleTrigger>
-
-        <CollapsibleContent>
-          <div className="border-t border-border bg-muted/20 p-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <h4 className="mb-2 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
-                  Top requesting stores
-                </h4>
-                {a.topStores.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No depth requested yet.</p>
-                ) : (
-                  <ul className="space-y-1.5">
-                    {a.topStores.map((s) => (
-                      <li
-                        key={s.store}
-                        className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs"
-                      >
-                        <div className="flex min-w-0 items-center gap-2">
-                          <Badge
-                            variant="outline"
-                            className={cn("text-[9px] uppercase tracking-wider", tierBadgeCls(s.tier))}
-                          >
-                            {s.tier}
-                          </Badge>
-                          <span className="truncate">{s.store}</span>
-                          {s.clientBacked && <Heart className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />}
-                        </div>
-                        <span className="font-medium">{s.units}u</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <div>
-                <h4 className="mb-2 text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
-                  Risk flags
-                </h4>
-                {a.flags.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">No flags raised.</p>
-                ) : (
-                  <div className="flex flex-wrap gap-1.5">
-                    {a.flags.map((f) => (
-                      <Badge
-                        key={f}
-                        variant="outline"
-                        className={cn(
-                          "text-[10px] uppercase tracking-wider",
-                          f.includes("Client")
-                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                            : f.includes("Polarizing")
-                              ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                              : "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300"
-                        )}
-                      >
-                        {f}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-
-                <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="rounded-md border border-border bg-background p-2">
-                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Price</div>
-                    <div className="font-medium">{a.product.retail_price ? `$${a.product.retail_price}` : "—"}</div>
-                  </div>
-                  <div className="rounded-md border border-border bg-background p-2">
-                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Color</div>
-                    <div className="truncate font-medium">{a.product.color || "—"}</div>
-                  </div>
-                  <div className="rounded-md border border-border bg-background p-2">
-                    <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Weighted</div>
-                    <div className="font-medium">{a.weightedScore}</div>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex justify-end">
-                  <Button asChild variant="outline" size="sm" className="gap-1">
-                    <Link to="/manager/submissions">
-                      View submissions <ArrowUpRight className="h-3 w-3" />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
+    <section className="mt-20">
+      <header className="mb-10 grid gap-1 md:grid-cols-[7rem_1fr] md:items-baseline md:gap-10">
+        <span className="font-mono text-[11px] uppercase tracking-[0.3em] text-muted-foreground bracket-num">
+          {eyebrow}
+        </span>
+        <div>
+          <h2 className="font-display text-[36px] font-normal leading-[1.05] tracking-tight sm:text-[44px]">
+            {title}
+          </h2>
+          {subtitle && (
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+              {subtitle}
+            </p>
+          )}
+        </div>
+      </header>
+      <div className="md:pl-[7rem] md:pr-2">{children}</div>
+    </section>
   );
 }
 
-// ---------- subcomponents ----------
-function Stat({
-  icon: Icon,
+function Figure({
   label,
   value,
-  tone = "default",
+  suffix,
 }: {
-  icon: typeof Store;
   label: string;
   value: number | string;
-  tone?: "default" | "green" | "yellow" | "red" | "warn" | "accent";
+  suffix?: string;
 }) {
-  const toneCls = {
-    default: "text-foreground",
-    green: "text-emerald-600 dark:text-emerald-400",
-    yellow: "text-amber-600 dark:text-amber-400",
-    red: "text-rose-600 dark:text-rose-400",
-    warn: "text-amber-600 dark:text-amber-400",
-    accent: "text-fuchsia-600 dark:text-fuchsia-400",
-  }[tone];
   return (
-    <Card className="p-4 shadow-soft">
-      <div className="mb-3 flex items-center justify-between">
-        <span className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</span>
-        <Icon className={cn("h-4 w-4", toneCls)} />
-      </div>
-      <div className={cn("font-display text-3xl font-medium leading-none", toneCls)}>{value}</div>
-    </Card>
+    <div>
+      <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+        {label}
+      </p>
+      <p className="mt-3 font-display text-4xl font-normal leading-none tracking-tight sm:text-5xl">
+        {value}
+        {suffix && (
+          <span className="ml-1 align-baseline font-mono text-xs text-muted-foreground">
+            {suffix}
+          </span>
+        )}
+      </p>
+    </div>
   );
 }
 
-function Panel({
-  title,
-  icon: Icon,
-  children,
-  className,
+function ConvictionRibbon({
+  green,
+  yellow,
+  red,
 }: {
-  title: string;
-  icon: typeof Store;
-  children: React.ReactNode;
-  className?: string;
+  green: number;
+  yellow: number;
+  red: number;
 }) {
+  const total = Math.max(green + yellow + red, 1);
+  const items: Array<{ key: string; label: string; n: number; bar: string }> = [
+    { key: "g", label: "Conviction", n: green, bar: "bg-decision-green" },
+    { key: "y", label: "Consideration", n: yellow, bar: "bg-decision-yellow" },
+    { key: "r", label: "Pass", n: red, bar: "bg-decision-red" },
+  ];
   return (
-    <Card className={cn("p-4 shadow-soft", className)}>
-      <div className="mb-3 flex items-center gap-2">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-        <h3 className="text-sm font-medium uppercase tracking-widest text-muted-foreground">
-          {title}
-        </h3>
+    <div>
+      <div className="flex h-[3px] w-full overflow-hidden">
+        {items.map((it) => (
+          <div
+            key={it.key}
+            className={cn("h-full", it.bar)}
+            style={{ width: `${(it.n / total) * 100}%` }}
+          />
+        ))}
       </div>
-      {children}
-    </Card>
-  );
-}
-
-function MiniList({
-  items,
-}: {
-  items: { primary: string; secondary: string; right: string }[];
-}) {
-  if (items.length === 0)
-    return <p className="text-sm text-muted-foreground">No data yet.</p>;
-  return (
-    <ul className="divide-y divide-border">
-      {items.map((it, i) => (
-        <li key={i} className="flex items-center justify-between gap-3 py-2 text-sm">
-          <div className="min-w-0">
-            <div className="truncate font-medium">{it.primary}</div>
-            <div className="truncate text-xs text-muted-foreground">{it.secondary}</div>
+      <div className="mt-4 grid grid-cols-3 gap-6">
+        {items.map((it) => (
+          <div key={it.key}>
+            <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">
+              {it.label}
+            </p>
+            <p className="mt-1 font-display text-2xl tabular-nums">{it.n}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {Math.round((it.n / total) * 100)}%
+            </p>
           </div>
-          <span className="shrink-0 text-xs font-medium text-muted-foreground">{it.right}</span>
-        </li>
-      ))}
-    </ul>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ConvictionLabel({ rec }: { rec: Recommendation }) {
+  const tone =
+    rec === "Buy with confidence" || rec === "Increase depth"
+      ? "text-[hsl(var(--decision-green))]"
+      : rec === "Test buy"
+      ? "text-[hsl(var(--decision-yellow))]"
+      : rec === "Pass"
+      ? "text-[hsl(var(--decision-red))]"
+      : "text-foreground";
+  const display =
+    rec === "Buy with confidence"
+      ? "Buy"
+      : rec === "Increase depth"
+      ? "Deepen"
+      : rec === "Test buy"
+      ? "Test"
+      : rec === "Flag for review"
+      ? "Review Needed"
+      : "Pass";
+  return (
+    <span className={cn("text-[10px] uppercase tracking-[0.3em]", tone)}>{display}</span>
+  );
+}
+
+function EditorialFeature({ a, index }: { a: ProductAgg; index: number }) {
+  const total = Math.max(a.green + a.yellow + a.red, 1);
+  return (
+    <article className="group">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-[hsl(var(--muted))]">
+        <ProductImage src={a.product.image_url} alt={a.product.style_number} />
+        <span className="absolute left-3 top-3 font-display text-xs tracking-[0.3em] text-foreground/80">
+          № {String(index).padStart(2, "0")}
+        </span>
+      </div>
+      <div className="mt-5">
+        <ConvictionLabel rec={a.recommendation} />
+        <h3 className="mt-2 font-display text-2xl leading-tight tracking-tight">
+          {a.product.style_number}
+        </h3>
+        <p className="mt-1 line-clamp-2 text-sm leading-relaxed text-muted-foreground">
+          {a.product.long_style_desc}
+        </p>
+        <div className="mt-5 flex h-[2px] w-full overflow-hidden">
+          <div className="bg-decision-green" style={{ width: `${(a.green / total) * 100}%` }} />
+          <div className="bg-decision-yellow" style={{ width: `${(a.yellow / total) * 100}%` }} />
+          <div className="bg-decision-red" style={{ width: `${(a.red / total) * 100}%` }} />
+        </div>
+        <dl className="mt-4 grid grid-cols-3 gap-4 text-[11px]">
+          <Stat2 label="Depth" value={`${a.units}u`} />
+          <Stat2 label="Flagship" value={`${a.flagshipUnits}u`} />
+          <Stat2 label="VIC" value={a.clientBacked} />
+        </dl>
+      </div>
+    </article>
+  );
+}
+
+function EditorialRow({
+  a,
+  kind,
+}: {
+  a: ProductAgg;
+  kind: "mixed" | "client";
+}) {
+  const total = Math.max(a.green + a.yellow + a.red, 1);
+  return (
+    <article className="flex gap-5">
+      <div className="aspect-[3/4] w-28 shrink-0 overflow-hidden bg-[hsl(var(--muted))] sm:w-32">
+        <ProductImage src={a.product.image_url} alt={a.product.style_number} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <ConvictionLabel rec={a.recommendation} />
+        <h3 className="mt-1.5 font-display text-xl leading-tight tracking-tight">
+          {a.product.style_number}
+        </h3>
+        <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+          {a.product.long_style_desc}
+        </p>
+        <div className="mt-3 flex h-[2px] w-full overflow-hidden">
+          <div className="bg-decision-green" style={{ width: `${(a.green / total) * 100}%` }} />
+          <div className="bg-decision-yellow" style={{ width: `${(a.yellow / total) * 100}%` }} />
+          <div className="bg-decision-red" style={{ width: `${(a.red / total) * 100}%` }} />
+        </div>
+        <p className="mt-3 text-[11px] uppercase tracking-[0.22em] text-muted-foreground">
+          {kind === "client"
+            ? `${a.clientBacked} client-backed · ${a.units}u total`
+            : `${a.green}G · ${a.yellow}Y · ${a.red}R · ${a.units}u`}
+        </p>
+      </div>
+    </article>
+  );
+}
+
+function IndexRow({ a, rank }: { a: ProductAgg; rank: number }) {
+  const [open, setOpen] = useState(false);
+  const total = Math.max(a.green + a.yellow + a.red, 1);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button className="flex w-full items-center gap-6 py-5 text-left transition-colors hover:bg-[hsl(var(--muted))]/30">
+          <span className="w-10 shrink-0 font-display text-sm tabular-nums text-muted-foreground">
+            {String(rank).padStart(2, "0")}
+          </span>
+          <div className="aspect-[3/4] w-14 shrink-0 overflow-hidden bg-[hsl(var(--muted))]">
+            <ProductImage src={a.product.image_url} alt={a.product.style_number} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-lg leading-tight tracking-tight">
+              {a.product.style_number}
+            </p>
+            <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+              {a.product.long_style_desc}
+            </p>
+          </div>
+          <div className="hidden w-32 shrink-0 sm:block">
+            <div className="flex h-[2px] w-full overflow-hidden">
+              <div className="bg-decision-green" style={{ width: `${(a.green / total) * 100}%` }} />
+              <div className="bg-decision-yellow" style={{ width: `${(a.yellow / total) * 100}%` }} />
+              <div className="bg-decision-red" style={{ width: `${(a.red / total) * 100}%` }} />
+            </div>
+            <p className="mt-1.5 text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+              {a.green}G · {a.yellow}Y · {a.red}R
+            </p>
+          </div>
+          <div className="hidden w-20 shrink-0 text-right sm:block">
+            <p className="font-display text-base tabular-nums">{a.units}</p>
+            <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+              Depth
+            </p>
+          </div>
+          <div className="hidden w-32 shrink-0 sm:block">
+            <ConvictionLabel rec={a.recommendation} />
+          </div>
+          <ChevronDown
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform",
+              open && "rotate-180"
+            )}
+          />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="grid gap-10 pb-8 pl-[3.5rem] pr-2 pt-2 md:grid-cols-3">
+          <div>
+            <p className="mb-3 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+              Top Doors
+            </p>
+            {a.topStores.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No depth requested.</p>
+            ) : (
+              <ul className="space-y-2">
+                {a.topStores.map((s) => (
+                  <li key={s.store} className="flex items-baseline justify-between gap-3 text-sm">
+                    <span className="truncate">
+                      {s.store}
+                      {s.clientBacked && (
+                        <span className="ml-2 text-[10px] uppercase tracking-[0.22em] text-[hsl(var(--decision-green))]">
+                          VIC
+                        </span>
+                      )}
+                    </span>
+                    <span className="font-display tabular-nums">{s.units}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <p className="mb-3 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+              Signals
+            </p>
+            {a.flags.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No flags raised.</p>
+            ) : (
+              <ul className="space-y-1.5 text-sm">
+                {a.flags.map((f) => (
+                  <li key={f} className="text-foreground">
+                    — {f}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <p className="mb-3 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+              Specification
+            </p>
+            <dl className="space-y-2 text-sm">
+              <SpecRow label="Price" value={a.product.retail_price ? `$${a.product.retail_price}` : "—"} />
+              <SpecRow label="Color" value={a.product.color || "—"} />
+              <SpecRow label="Category" value={a.category} />
+              <SpecRow label="Weighted" value={String(a.weightedScore)} />
+            </dl>
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function Stat2({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div>
+      <dt className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
+        {label}
+      </dt>
+      <dd className="mt-0.5 font-display text-base tabular-nums">{value}</dd>
+    </div>
+  );
+}
+
+function SpecRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 border-b border-[hsl(var(--hairline))] pb-1.5">
+      <dt className="text-[11px] uppercase tracking-[0.22em] text-muted-foreground">{label}</dt>
+      <dd className="truncate text-right text-sm capitalize">{value}</dd>
+    </div>
+  );
+}
+
+function EmptyNote({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="border-t border-[hsl(var(--hairline))] pt-6 text-sm italic text-muted-foreground">
+      {children}
+    </p>
+  );
+}
+
+function SkeletonNote() {
+  return (
+    <p className="border-t border-[hsl(var(--hairline))] pt-6 text-sm text-muted-foreground">
+      Loading…
+    </p>
   );
 }
