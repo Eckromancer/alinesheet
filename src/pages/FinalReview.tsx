@@ -106,7 +106,7 @@ export default function FinalReview() {
     >
       <div className="mb-5">
         <h1 className="font-display text-3xl font-medium">Final Review</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Confirm selections before sending to Madison.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Confirm selections before sending to the buying team.</p>
       </div>
 
       {/* Summary cards */}

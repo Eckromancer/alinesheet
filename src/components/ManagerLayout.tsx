@@ -36,7 +36,7 @@ export default function ManagerLayout({ children }: Props) {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
           <Link to="/manager" className="flex flex-col leading-tight">
             <span className="font-display text-xl tracking-wide">
-              AKRIS <span className="text-muted-foreground">·</span> NM
+              Style Compass
             </span>
             <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
               Management Portal

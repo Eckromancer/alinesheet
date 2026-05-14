@@ -9,7 +9,7 @@ import { generateWorksheetPDF } from "@/lib/pdf";
 import { CheckCircle2, Download, Mail, Loader2, FileJson, FileText } from "lucide-react";
 import { toast } from "sonner";
 
-const MADISON_EMAIL = "madison.withers@saks.com";
+const LEAD_EMAIL = "buying-team@company.com";
 
 export default function Confirmation() {
   const session = useSession();
@@ -48,7 +48,7 @@ export default function Confirmation() {
   const exportCSV = () => {
     if (!session) return;
     const rows = rowsForExport(items, session.reviewer, session.store);
-    downloadFile(toCSV(rows), `akris-review-${session.store.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0,10)}.csv`);
+    downloadFile(toCSV(rows), `review-${session.store.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0,10)}.csv`);
   };
   const exportJSON = () => {
     if (!session) return;
@@ -57,11 +57,11 @@ export default function Confirmation() {
       store: session.store,
       submitted_at: submittedAt,
       counts: stats,
-      recipient: MADISON_EMAIL,
+      recipient: LEAD_EMAIL,
       items: rowsForExport(items, session.reviewer, session.store),
     };
     downloadFile(JSON.stringify(payload, null, 2),
-      `akris-review-${session.store.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0,10)}.json`,
+      `review-${session.store.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0,10)}.json`,
       "application/json");
   };
 
@@ -104,14 +104,14 @@ export default function Confirmation() {
         </div>
         <h1 className="mt-4 font-display text-3xl font-medium">Submission sent</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Submission sent to Madison for processing and allocation.
+          Submission sent to the buying team for processing and allocation.
         </p>
 
         <div className="mt-6 rounded-2xl border border-border bg-card p-5 text-left shadow-card">
           <Row label="Reviewer" value={session?.reviewer ?? "—"} />
           <Row label="Store" value={session?.store ?? "—"} />
           <Row label="Submitted" value={submittedAt ?? "—"} />
-          <Row label="Recipient" value={MADISON_EMAIL} />
+          <Row label="Recipient" value={LEAD_EMAIL} />
           <hr className="my-3 border-border" />
           <div className="grid grid-cols-4 gap-2 text-center">
             <Stat label="Green" value={stats.green} tone="text-decision-green" />
@@ -139,7 +139,7 @@ export default function Confirmation() {
 
         <div className="mt-3 rounded-lg border border-dashed border-border bg-secondary/50 p-3 text-left text-xs text-muted-foreground">
           <Mail className="mr-1 inline h-3.5 w-3.5" />
-          Auto-delivery to <span className="font-medium text-foreground">{MADISON_EMAIL}</span> can be wired via webhook or email integration.
+          Auto-delivery to <span className="font-medium text-foreground">{LEAD_EMAIL}</span> can be wired via webhook or email integration.
           The export above is the spreadsheet-ready payload.
         </div>
 

@@ -1,4 +1,4 @@
-const KEY = "akris-admin-unlocked";
+const KEY = "sc-admin-unlocked";
 // Internal-tool password gate. Change here to rotate.
 export const ADMIN_PASSWORD = "Manager123$";
 

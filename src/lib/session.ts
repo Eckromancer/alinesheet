@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const KEY = "akris-reviewer";
+const KEY = "sc-reviewer";
 
 export interface ReviewerSession {
   reviewer: string;
@@ -19,17 +19,17 @@ export function getSession(): ReviewerSession | null {
 export function setSession(s: ReviewerSession | null) {
   if (s) localStorage.setItem(KEY, JSON.stringify(s));
   else localStorage.removeItem(KEY);
-  window.dispatchEvent(new Event("akris-session"));
+  window.dispatchEvent(new Event("sc-session"));
 }
 
 export function useSession() {
   const [session, setS] = useState<ReviewerSession | null>(() => getSession());
   useEffect(() => {
     const h = () => setS(getSession());
-    window.addEventListener("akris-session", h);
+    window.addEventListener("sc-session", h);
     window.addEventListener("storage", h);
     return () => {
-      window.removeEventListener("akris-session", h);
+      window.removeEventListener("sc-session", h);
       window.removeEventListener("storage", h);
     };
   }, []);

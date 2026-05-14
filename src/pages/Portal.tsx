@@ -55,13 +55,13 @@ export default function Portal() {
               <Lock className="h-5 w-5" />
             </div>
             <p className="font-display text-2xl tracking-wide">
-              AKRIS <span className="text-muted-foreground">·</span> NM
+              Style Compass
             </p>
             <h1 className="mt-3 font-display text-4xl font-medium tracking-tight">
               Management Portal
             </h1>
             <p className="mt-3 text-sm text-muted-foreground">
-              Restricted access. For Madison and authorized buying leadership only.
+              Restricted access. For authorized buying leadership only.
             </p>
           </div>
 
@@ -106,7 +106,7 @@ export default function Portal() {
         </div>
 
         <p className="text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
-          Akris × Neiman Marcus · Buying Review System
+          Style Compass · Buying Review System
         </p>
       </div>
     </div>

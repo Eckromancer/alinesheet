@@ -39,7 +39,7 @@ export async function generateWorksheetPDF(
   // Cover header
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
-  doc.text("AKRIS · Neiman Marcus DSA Worksheet", 40, 40);
+  doc.text("Style Compass · Buying Worksheet", 40, 40);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.text(`Store: ${store}`, 40, 58);
@@ -117,7 +117,7 @@ export async function generateWorksheetPDF(
       }
     },
     didDrawPage: () => {
-      const str = `Akris NM DSA Worksheet · ${store} · ${reviewer}`;
+      const str = `Style Compass Worksheet · ${store} · ${reviewer}`;
       doc.setFontSize(8);
       doc.setTextColor(120);
       doc.text(str, 24, pageH - 14);
@@ -126,6 +126,6 @@ export async function generateWorksheetPDF(
     },
   });
 
-  const filename = `akris-worksheet-${store.replace(/\s+/g, "_")}-${reviewer.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0, 10)}.pdf`;
+  const filename = `worksheet-${store.replace(/\s+/g, "_")}-${reviewer.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0, 10)}.pdf`;
   doc.save(filename);
 }

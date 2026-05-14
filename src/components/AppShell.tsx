@@ -13,7 +13,7 @@ export default function AppShell({ children, right, subtitle }: Props) {
       <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3">
           <Link to="/" className="flex flex-col leading-tight">
-            <span className="font-display text-xl tracking-wide">AKRIS <span className="text-muted-foreground">·</span> NM</span>
+            <span className="font-display text-xl tracking-wide">Style Compass</span>
             {subtitle && <span className="text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{subtitle}</span>}
           </Link>
           <div className="flex items-center gap-2">{right}</div>
