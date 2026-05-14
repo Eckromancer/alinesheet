@@ -31,7 +31,7 @@ export default function Governance() {
       <div className="mb-6">
         <h1 className="font-display text-3xl font-medium tracking-tight">Governance</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Controls protecting the integrity of the Akris × NM DSA worksheet.
+          Controls protecting the integrity of the buying review worksheet.
         </p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">

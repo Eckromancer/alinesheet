@@ -1,4 +1,4 @@
-const LAST_TAB_KEY = "akris-last-tab";
+const LAST_TAB_KEY = "sc-last-tab";
 
 export function setLastTab(path: string) {
   try {

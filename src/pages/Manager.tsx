@@ -146,7 +146,7 @@ export default function Manager() {
       processed: review.processed ? "yes" : "no",
       submitted_at: review.submitted_at ?? "",
     }));
-    downloadFile(toCSV(out), `akris-submissions-${new Date().toISOString().slice(0, 10)}.csv`);
+    downloadFile(toCSV(out), `submissions-${new Date().toISOString().slice(0, 10)}.csv`);
   };
 
   const counts = useMemo(() => {
