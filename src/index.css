@@ -38,29 +38,27 @@
 
     --radius: 0.0625rem;
 
-    /* Decision tokens — jewel-tone editorial palette */
-    --decision-green: 162 48% 32%;          /* deep emerald */
+    /* Decision tokens — muted luxury palette */
+    --decision-green: 150 22% 28%;          /* pine / moss */
     --decision-green-foreground: 36 33% 97%;
-    --decision-green-soft: 162 32% 90%;
+    --decision-green-soft: 150 14% 92%;
 
-    --decision-yellow: 38 82% 56%;          /* saffron / amber */
-    --decision-yellow-foreground: 24 25% 12%;
-    --decision-yellow-soft: 40 70% 90%;
+    --decision-yellow: 36 38% 46%;          /* ochre / champagne */
+    --decision-yellow-foreground: 24 15% 12%;
+    --decision-yellow-soft: 38 28% 92%;
 
-    --decision-red: 6 68% 50%;              /* vermilion */
+    --decision-red: 8 42% 44%;              /* terracotta / oxblood */
     --decision-red-foreground: 36 33% 97%;
-    --decision-red-soft: 8 60% 92%;
+    --decision-red-soft: 8 30% 92%;
 
     --hairline: 24 12% 76%;                 /* pale stone divider */
 
-    --editorial-terracotta: 12 72% 50%;     /* vivid terracotta */
+    --editorial-terracotta: 14 56% 42%;
     --editorial-stone: 30 14% 88%;
-    --editorial-clay: 22 56% 62%;           /* warm clay */
-    --editorial-ink: 222 38% 16%;           /* midnight indigo */
+    --editorial-clay: 18 22% 78%;
+    --editorial-ink: 24 18% 8%;
     --editorial-bone: 38 32% 95%;
     --editorial-mute: 24 8% 52%;
-    --editorial-plum: 286 36% 38%;          /* deep plum accent */
-    --editorial-teal: 188 62% 38%;          /* peacock teal */
 
     --shadow-soft: 0 1px 2px hsl(24 15% 12% / 0.04), 0 8px 24px hsl(24 15% 12% / 0.06);
     --shadow-card: 0 1px 3px hsl(24 15% 12% / 0.06), 0 12px 32px hsl(24 15% 12% / 0.08);
