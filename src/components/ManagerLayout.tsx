@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ClipboardList, LayoutDashboard, ShieldCheck, FileBarChart, LogOut, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ViewToggle from "@/components/ViewToggle";
+import Logo from "@/components/Logo";
 
 interface Props {
   children: ReactNode;
@@ -36,7 +37,7 @@ export default function ManagerLayout({ children }: Props) {
       <header className="sticky top-0 z-30 border-b border-[hsl(var(--hairline))] bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5">
           <Link to="/manager" className="flex items-baseline gap-3 leading-none">
-            <span className="font-display text-2xl font-medium tracking-tight">A L / N E</span>
+            <Logo />
             <span className="hidden text-[10px] uppercase tracking-[0.28em] text-muted-foreground sm:inline">
               Buying Intelligence
             </span>
