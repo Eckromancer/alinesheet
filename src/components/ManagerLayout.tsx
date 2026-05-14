@@ -36,7 +36,7 @@ export default function ManagerLayout({ children }: Props) {
       <header className="sticky top-0 z-30 border-b border-[hsl(var(--hairline))] bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-3.5">
           <Link to="/manager" className="flex items-baseline gap-3 leading-none">
-            <span className="font-display text-3xl tracking-tight">A L / N E</span>
+            <span className="font-display text-2xl font-medium tracking-tight">A L / N E</span>
             <span className="hidden text-[10px] uppercase tracking-[0.28em] text-muted-foreground sm:inline">
               Buying Intelligence
             </span>
