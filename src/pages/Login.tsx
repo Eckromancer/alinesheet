@@ -49,7 +49,7 @@ export default function Login() {
     <AppShell subtitle="Buying Review">
       <div className="mx-auto mt-6 max-w-md">
         <div className="mb-8 text-center">
-          <h1 className="font-display text-4xl font-medium tracking-tight">Style Compass</h1>
+          <h1 className="font-display text-4xl font-medium tracking-tight">A L / N E</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Select your store to begin. Reviews will be tagged with your store and reviewer name for the buying team.
           </p>

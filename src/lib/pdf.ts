@@ -39,7 +39,7 @@ export async function generateWorksheetPDF(
   // Cover header
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
-  doc.text("Style Compass · Buying Worksheet", 40, 40);
+  doc.text("A L / N E · Buying Worksheet", 40, 40);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.text(`Store: ${store}`, 40, 58);
@@ -117,7 +117,7 @@ export async function generateWorksheetPDF(
       }
     },
     didDrawPage: () => {
-      const str = `Style Compass Worksheet · ${store} · ${reviewer}`;
+      const str = `A L / N E Worksheet · ${store} · ${reviewer}`;
       doc.setFontSize(8);
       doc.setTextColor(120);
       doc.text(str, 24, pageH - 14);

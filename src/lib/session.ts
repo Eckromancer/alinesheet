@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const KEY = "sc-reviewer";
+const KEY = "alne-reviewer";
 
 export interface ReviewerSession {
   reviewer: string;

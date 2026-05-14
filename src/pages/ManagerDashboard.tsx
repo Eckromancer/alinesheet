@@ -806,7 +806,7 @@ export default function ManagerDashboard() {
 
       <footer className="mt-20 border-t border-[hsl(var(--hairline))] py-8 text-center">
         <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground">
-          Style Compass · Buyer Intelligence
+          A L / N E · Buyer Intelligence
         </p>
       </footer>
     </ManagerLayout>

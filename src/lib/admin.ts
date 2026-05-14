@@ -1,4 +1,4 @@
-const KEY = "sc-admin-unlocked";
+const KEY = "alne-admin-unlocked";
 // Internal-tool password gate. Change here to rotate.
 export const ADMIN_PASSWORD = "Manager123$";
 
