@@ -41,17 +41,20 @@ export default function ManagerLayout({ children }: Props) {
               Buying Intelligence
             </span>
           </Link>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              lockAdmin();
-              navigate("/portal");
-            }}
-          >
-            <LogOut className="mr-1 h-4 w-4" />
-            Sign out
-          </Button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <ViewToggle active="buyer" />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                lockAdmin();
+                navigate("/portal");
+              }}
+            >
+              <LogOut className="mr-1 h-4 w-4" />
+              Sign out
+            </Button>
+          </div>
         </div>
         <nav className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-3">
           {tabs.map((t) => (
