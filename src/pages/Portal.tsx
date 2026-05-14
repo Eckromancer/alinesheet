@@ -55,7 +55,7 @@ export default function Portal() {
               <Lock className="h-5 w-5" />
             </div>
             <p className="font-display text-2xl tracking-wide">
-              Style Compass
+              A L / N E
             </p>
             <h1 className="mt-3 font-display text-4xl font-medium tracking-tight">
               Management Portal
@@ -106,7 +106,7 @@ export default function Portal() {
         </div>
 
         <p className="text-center text-[10px] uppercase tracking-[0.2em] text-muted-foreground/60">
-          Style Compass · Buying Review System
+          A L / N E · Buying Review System
         </p>
       </div>
     </div>

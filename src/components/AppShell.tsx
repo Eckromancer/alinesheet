@@ -13,7 +13,7 @@ export default function AppShell({ children, right, subtitle }: Props) {
       <header className="sticky top-0 z-30 border-b border-[hsl(var(--hairline))] bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-3.5">
           <Link to="/" className="flex items-center leading-none">
-            <span className="font-display text-2xl tracking-tight sm:text-3xl">Style Compass</span>
+            <span className="font-display text-2xl tracking-tight sm:text-3xl">A L / N E</span>
             {subtitle && (
               <span className="ml-3 hidden text-[10px] uppercase tracking-[0.28em] text-muted-foreground sm:block">
                 {subtitle}
