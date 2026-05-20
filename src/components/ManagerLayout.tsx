@@ -7,6 +7,7 @@ import { ClipboardList, LayoutDashboard, ShieldCheck, FileBarChart, LogOut, Home
 import { cn } from "@/lib/utils";
 import ViewToggle from "@/components/ViewToggle";
 import Logo from "@/components/Logo";
+import ConfidentialFooter from "@/components/ConfidentialFooter";
 
 interface Props {
   children: ReactNode;
@@ -79,6 +80,9 @@ export default function ManagerLayout({ children }: Props) {
         </nav>
       </header>
       <main className="mx-auto max-w-6xl px-5 py-6">{children}</main>
+      <div className="mx-auto max-w-6xl px-5">
+        <ConfidentialFooter />
+      </div>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ReactNode } from "react";
 import ViewToggle from "@/components/ViewToggle";
 import Logo from "@/components/Logo";
+import ConfidentialFooter from "@/components/ConfidentialFooter";
 
 interface Props {
   children: ReactNode;
@@ -29,6 +30,9 @@ export default function AppShell({ children, right, subtitle }: Props) {
         </div>
       </header>
       <main className="mx-auto max-w-3xl px-5 pb-32 pt-5">{children}</main>
+      <div className="mx-auto max-w-3xl px-5">
+        <ConfidentialFooter />
+      </div>
     </div>
   );
 }
