@@ -15,6 +15,7 @@ import Manager from "./pages/Manager";
 import Governance from "./pages/Governance";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
+import EmailGate from "./components/EmailGate";
 
 const queryClient = new QueryClient();
 
@@ -24,20 +25,22 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/review" element={<Review />} />
-          <Route path="/final" element={<FinalReview />} />
-          <Route path="/confirmation" element={<Confirmation />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/portal" element={<Portal />} />
-          <Route path="/manager" element={<ManagerDashboard />} />
-          <Route path="/manager/home" element={<ManagerHome />} />
-          <Route path="/manager/submissions" element={<Manager />} />
-          <Route path="/manager/governance" element={<Governance />} />
-          <Route path="/manager/reports" element={<Reports />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <EmailGate>
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/review" element={<Review />} />
+            <Route path="/final" element={<FinalReview />} />
+            <Route path="/confirmation" element={<Confirmation />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/portal" element={<Portal />} />
+            <Route path="/manager" element={<ManagerDashboard />} />
+            <Route path="/manager/home" element={<ManagerHome />} />
+            <Route path="/manager/submissions" element={<Manager />} />
+            <Route path="/manager/governance" element={<Governance />} />
+            <Route path="/manager/reports" element={<Reports />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </EmailGate>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
