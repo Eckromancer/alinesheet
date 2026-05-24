@@ -145,7 +145,32 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      mark_review_processed: {
+        Args: { _review_id: string; _value: boolean }
+        Returns: {
+          created_at: string
+          decision_status: Database["public"]["Enums"]["decision_status"] | null
+          id: string
+          notes: string | null
+          processed: boolean
+          processed_at: string | null
+          product_id: string
+          requested_bulk_units: number | null
+          reviewer: string
+          selected_sizes: number[]
+          special_order_notes: string | null
+          store: string
+          submission_status: Database["public"]["Enums"]["submission_status"]
+          submitted_at: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "reviews"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       decision_status: "green" | "yellow" | "red"
