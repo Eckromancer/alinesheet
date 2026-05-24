@@ -152,11 +152,6 @@ export default function Login() {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-muted-foreground">
-          <Link to="/admin" className="underline-offset-4 hover:underline">
-            Admin · Import worksheet
-          </Link>
-        </p>
       </div>
 
       <footer className="mt-16 flex justify-center pb-6">

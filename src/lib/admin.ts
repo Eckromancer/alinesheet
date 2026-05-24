@@ -1,7 +1,6 @@
+import { supabase } from "@/integrations/supabase/client";
+
 const KEY = "alne-admin-unlocked";
-// Internal-tool password gate. Change here to rotate.
-export const ADMIN_PASSWORD = "Manager123$";
-export const BUYER_PASSWORD = "Buyer123$";
 
 export function isAdminUnlocked(): boolean {
   try {
@@ -11,10 +10,17 @@ export function isAdminUnlocked(): boolean {
   }
 }
 
-export function unlockAdmin(password: string): boolean {
-  if (password !== ADMIN_PASSWORD && password !== BUYER_PASSWORD) return false;
-  sessionStorage.setItem(KEY, "1");
-  return true;
+export async function unlockAdmin(password: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.functions.invoke("verify-portal-password", {
+      body: { password },
+    });
+    if (error || !data?.ok) return false;
+    sessionStorage.setItem(KEY, "1");
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function lockAdmin() {

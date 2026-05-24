@@ -7,7 +7,6 @@ import Login from "./pages/Login";
 import Review from "./pages/Review";
 import FinalReview from "./pages/FinalReview";
 import Confirmation from "./pages/Confirmation";
-import Admin from "./pages/Admin";
 import Portal from "./pages/Portal";
 import ManagerDashboard from "./pages/ManagerDashboard";
 import ManagerHome from "./pages/ManagerHome";
@@ -31,7 +30,6 @@ const App = () => (
             <Route path="/review" element={<Review />} />
             <Route path="/final" element={<FinalReview />} />
             <Route path="/confirmation" element={<Confirmation />} />
-            <Route path="/admin" element={<Admin />} />
             <Route path="/portal" element={<Portal />} />
             <Route path="/manager" element={<ManagerDashboard />} />
             <Route path="/manager/home" element={<ManagerHome />} />
