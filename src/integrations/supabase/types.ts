@@ -46,6 +46,7 @@ export type Database = {
           image_url: string | null
           long_style_desc: string
           retail_price: number | null
+          season: string | null
           sort_order: number
           style_number: string
         }
@@ -56,6 +57,7 @@ export type Database = {
           image_url?: string | null
           long_style_desc: string
           retail_price?: number | null
+          season?: string | null
           sort_order?: number
           style_number: string
         }
@@ -66,6 +68,7 @@ export type Database = {
           image_url?: string | null
           long_style_desc?: string
           retail_price?: number | null
+          season?: string | null
           sort_order?: number
           style_number?: string
         }
