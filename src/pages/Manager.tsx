@@ -119,13 +119,10 @@ export default function Manager() {
           : r
       )
     );
-    const { error } = await supabase
-      .from("reviews")
-      .update({
-        processed: value,
-        processed_at: value ? new Date().toISOString() : null,
-      })
-      .eq("id", id);
+    const { error } = await supabase.rpc("mark_review_processed", {
+      _review_id: id,
+      _value: value,
+    });
     if (error) {
       toast({ title: "Update failed", description: error.message, variant: "destructive" });
       load();
