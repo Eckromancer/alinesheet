@@ -38,20 +38,19 @@ export default function ViewToggle({ active }: { active: View }) {
     }
   };
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    setTimeout(() => {
-      if (unlockAdmin(password)) {
-        setOpen(false);
-        setPassword("");
-        setError(null);
-        navigate("/manager");
-      } else {
-        setError("Incorrect password.");
-      }
-      setSubmitting(false);
-    }, 200);
+    const ok = await unlockAdmin(password);
+    if (ok) {
+      setOpen(false);
+      setPassword("");
+      setError(null);
+      navigate("/manager");
+    } else {
+      setError("Incorrect password.");
+    }
+    setSubmitting(false);
   };
 
   return (

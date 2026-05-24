@@ -152,7 +152,6 @@ export default function Review() {
       <AppShell subtitle="Buying Review">
         <div className="rounded-2xl border border-border bg-card p-8 text-center">
           <p className="text-muted-foreground">No products to review yet.</p>
-          <Button className="mt-4" onClick={() => navigate("/admin")}>Import worksheet</Button>
         </div>
       </AppShell>
     );
