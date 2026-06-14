@@ -1,10 +1,10 @@
 # AlineSheet
 
-A B2B buying review tool for Akris PS27 Cruise — streamlines product evaluation decisions across a multi-store retail network.
+A B2B buying review tool for Neiman Marcus Akris DSA's and Buying Office team — streamlines product evaluation decisions across a multi-store retail network.
 
 ## What it does
 
-Store associates (DSA representatives) review Akris PS27 Cruise color and bulk products, making buy/skip decisions with size and quantity selections. Managers get a real-time dashboard showing participation rates, decision breakdowns, and size assortment heatmaps across ~25 retail doors.
+Store associates (DSAs) review Akris color and bulk collections, making buy/skip decisions with size and quantity selections. The buying office gets a real-time dashboard showing participation rates, decision breakdowns, and size assortment heatmaps across ~25 retail doors.
 
 ## Tech stack
 
@@ -18,12 +18,12 @@ Store associates (DSA representatives) review Akris PS27 Cruise color and bulk p
 
 ## Features
 
-- **Review module** — DSA reps evaluate products and submit buy/skip decisions with size/quantity selection
-- **Manager dashboard** — real-time analytics: store participation, green/yellow/red decision breakdown, size heatmaps
+- **Review module** — DSAs evaluate products and submit buy/skip decisions with size/quantity selection
+- **Buyer dashboard** — real-time analytics: store participation, green/yellow/red decision breakdown, size heatmaps
 - **Confirmation portal** — multi-step review submission with final approval
 - **Multi-store support** — 24 retail doors plus pilot programs with store-specific DSA management
 - **Access control** — email gate restricts access to authorized users
-- **Data export** — PDF report generation for manager governance
+- **Data export** — PDF report generation for buyer governance
 
 ## Getting started
 
