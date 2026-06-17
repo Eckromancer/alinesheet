@@ -27,6 +27,8 @@ type Product = Tables<"products">;
 
 type Decision = "green" | "yellow" | "red";
 
+const GRID_SIZES = [2, 4, 6, 8, 10, 12, 14, 16];
+
 interface SyntheticReview {
   product_id: string;
   store: string;
@@ -34,6 +36,7 @@ interface SyntheticReview {
   requested_bulk_units: number;
   client_backed: boolean;
   has_notes: boolean;
+  selected_sizes: number[];
 }
 
 // ---------- deterministic mock augmentation ----------
@@ -155,6 +158,18 @@ function classifyProduct(p: Product): ProductProfile {
   return { category, priceTier, editorial, polarity, commercialAppeal };
 }
 
+// Size selection probabilities follow a bell curve peaking at 8-10 (index 3-4)
+const SIZE_BASE_PROBS = [0.18, 0.55, 0.88, 0.98, 0.92, 0.68, 0.30, 0.08];
+
+function synthSizes(dec: Decision, sp: StoreProfile, seed: number): number[] {
+  if (dec === "red") return [];
+  const mult = dec === "green"
+    ? (sp.tier === "flagship" ? 1.0 : sp.tier === "premium" ? 0.85 : 0.70)
+    : 0.40;
+  const sizes = GRID_SIZES.filter((_, i) => rand(seed ^ (i * 97)) < SIZE_BASE_PROBS[i] * mult);
+  return sizes.length > 0 ? sizes : [8];
+}
+
 function decideReview(
   store: StoreEntryLike,
   storeProfile: StoreProfile,
@@ -255,6 +270,7 @@ function decideReview(
     requested_bulk_units: units,
     client_backed: clientBacked,
     has_notes: hasNotes,
+    selected_sizes: synthSizes(dec, storeProfile, seed ^ 0xdeadbeef),
   };
 }
 
@@ -285,6 +301,7 @@ function fromReal(r: Review): SyntheticReview | null {
     requested_bulk_units: r.requested_bulk_units ?? 0,
     client_backed: !!r.special_order_notes && r.special_order_notes.trim().length > 0,
     has_notes: !!r.notes && r.notes.trim().length > 0,
+    selected_sizes: (r.selected_sizes ?? []) as number[],
   };
 }
 
@@ -331,6 +348,7 @@ interface ProductAgg {
   flags: string[];
   recommendation: Recommendation;
   topStores: { store: string; units: number; tier: StoreTier; clientBacked: boolean }[];
+  sizeDistribution: Record<number, number>;
 }
 
 function aggregate(products: Product[], rows: SyntheticReview[]): ProductAgg[] {
@@ -420,6 +438,16 @@ function aggregate(products: Product[], rows: SyntheticReview[]): ProductAgg[] {
         clientBacked: r.client_backed,
       }));
 
+    const sizeDistribution: Record<number, number> = {};
+    GRID_SIZES.forEach((s) => { sizeDistribution[s] = 0; });
+    list
+      .filter((r) => r.decision_status !== "red")
+      .forEach((r) => {
+        r.selected_sizes.forEach((s) => {
+          if (s in sizeDistribution) sizeDistribution[s] += 1;
+        });
+      });
+
     return {
       product,
       category: prof.category,
@@ -437,6 +465,7 @@ function aggregate(products: Product[], rows: SyntheticReview[]): ProductAgg[] {
       flags: Array.from(new Set(flags)),
       recommendation,
       topStores,
+      sizeDistribution,
     };
   });
 }
@@ -1020,7 +1049,7 @@ function IndexRow({ a, rank }: { a: ProductAgg; rank: number }) {
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="grid gap-10 pb-8 pl-[3.5rem] pr-2 pt-2 md:grid-cols-3">
+        <div className="grid gap-10 pb-8 pl-[3.5rem] pr-2 pt-2 sm:grid-cols-2 lg:grid-cols-4">
           <div>
             <p className="mb-3 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
               Top Doors
@@ -1072,9 +1101,43 @@ function IndexRow({ a, rank }: { a: ProductAgg; rank: number }) {
               <SpecRow label="Weighted" value={String(a.weightedScore)} />
             </dl>
           </div>
+          <div>
+            <p className="mb-3 text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
+              Size Demand
+            </p>
+            <SizeGrid dist={a.sizeDistribution} />
+          </div>
         </div>
       </CollapsibleContent>
     </Collapsible>
+  );
+}
+
+function SizeGrid({ dist }: { dist: Record<number, number> }) {
+  const max = Math.max(...GRID_SIZES.map((s) => dist[s] ?? 0), 1);
+  return (
+    <div className="flex flex-col gap-1.5">
+      {GRID_SIZES.map((s) => {
+        const count = dist[s] ?? 0;
+        const pct = (count / max) * 100;
+        return (
+          <div key={s} className="flex items-center gap-2">
+            <span className="w-5 shrink-0 text-right font-mono text-[10px] text-muted-foreground">
+              {s}
+            </span>
+            <div className="relative h-2.5 flex-1 bg-[hsl(var(--hairline))]">
+              <div
+                className="absolute inset-y-0 left-0 bg-foreground transition-all duration-700"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+            <span className="w-6 shrink-0 text-right font-display text-[11px] tabular-nums text-muted-foreground">
+              {count > 0 ? count : "—"}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
