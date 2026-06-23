@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { Settings, LogOut, Download, RefreshCw, Star, StarOff, ExternalLink, Zap, X, TrendingUp } from "lucide-react";
 import { calculatePrivateValuation, type BusinessType } from "@/utils/valuationEngine";
 import { processScrapedIdeaPipeline } from "@/utils/ideaPipeline";
+import ValuationGapCard from "@/components/ValuationGapCard";
 
 interface EvaluationResult {
   scraped_metrics: {
@@ -90,6 +91,7 @@ function VCScorecard({ evaluation, onClose }: { evaluation: EvaluationResult; on
   const v = calculatePrivateValuation(m.projected_attainable_arr_usd, c.business_type);
   const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
   const fmtNum = (n: number) => new Intl.NumberFormat("en-US", { notation: "compact" }).format(n);
+  void fmt; void fmtNum; // still used in metrics grid below
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -134,30 +136,11 @@ function VCScorecard({ evaluation, onClose }: { evaluation: EvaluationResult; on
         </div>
 
         {/* Valuation */}
-        <div className="mx-6 mb-4 rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-3">
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="h-4 w-4 text-orange-400" />
-            <p className="text-xs text-gray-400 uppercase tracking-widest">Private Market Valuation</p>
-          </div>
-          <div className="flex items-end justify-between">
-            <div>
-              <p className={`text-2xl font-black ${v.passesElitePrivateThreshold ? "text-yellow-400" : "text-white"}`}>
-                {v.formattedValuation}
-              </p>
-              <p className="text-xs text-gray-500 mt-0.5">{v.multipleUsed}</p>
-            </div>
-            {v.passesElitePrivateThreshold ? (
-              <span className="text-xs bg-yellow-400/20 text-yellow-300 border border-yellow-500/40 rounded px-2 py-1 font-bold">
-                🦄 UNICORN THRESHOLD
-              </span>
-            ) : (
-              <div className="text-right">
-                <p className="text-xs text-gray-500">Gap to unicorn</p>
-                <p className="text-sm text-gray-400 font-semibold">{fmt(v.gapToThresholdUSD)}</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <ValuationGapCard
+          title={undefined}
+          businessType={c.business_type}
+          valuation={v}
+        />
 
         {/* Rationale */}
         <div className="px-6 pb-5">
