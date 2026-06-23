@@ -55,7 +55,7 @@ export async function evaluateScrapedIdea(
   const response = await client.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 1500,
-    temperature: 0.1,
+    temperature: 0.4,
     system: SYSTEM_PROMPT,
     messages: [
       {

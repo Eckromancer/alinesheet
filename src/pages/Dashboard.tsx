@@ -505,12 +505,25 @@ function IdeasTableView({ ideas, onToggleSave, onEvaluate, evaluatingId, onOpenV
   evaluatingId: string | null;
   onOpenValuation: (idea: Idea) => void;
 }) {
+  const SCORE_BARRIER = 4.2;
+  const qualifiedIdeas = ideas.filter(i => (i.composite_score ?? 0) >= SCORE_BARRIER);
+
   if (ideas.length === 0) {
     return (
       <div className="text-center py-24 text-gray-500">
         <div className="text-5xl mb-4">🔍</div>
         <p className="text-lg font-medium text-gray-400">No ideas yet</p>
         <p className="text-sm mt-1">Hit "Run Scan" to mine for opportunities</p>
+      </div>
+    );
+  }
+
+  if (qualifiedIdeas.length === 0) {
+    return (
+      <div className="text-center py-24 text-gray-500">
+        <div className="text-4xl mb-4">📉</div>
+        <p className="text-lg font-medium text-gray-400">0 New Ideas Crossed the Target Metric this Hour</p>
+        <p className="text-sm mt-1">No concepts cleared the {SCORE_BARRIER} composite score barrier — run a fresh scan to pull new data.</p>
       </div>
     );
   }
@@ -533,7 +546,7 @@ function IdeasTableView({ ideas, onToggleSave, onEvaluate, evaluatingId, onOpenV
           </tr>
         </thead>
         <tbody>
-          {ideas.map((idea, i) => (
+          {qualifiedIdeas.map((idea, i) => (
             <IdeaRow
               key={idea.id} idea={idea} rank={i + 1}
               onToggleSave={onToggleSave}
