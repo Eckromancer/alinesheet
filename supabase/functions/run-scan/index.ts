@@ -55,33 +55,15 @@ interface ScoredIdea {
   score_buildability: number;
 }
 
-async function getRedditToken(clientId: string, clientSecret: string): Promise<string> {
-  const credentials = btoa(`${clientId}:${clientSecret}`);
-  const resp = await fetch("https://www.reddit.com/api/v1/access_token", {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${credentials}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent": "IdeaMiner/1.0 by u/ideaminer_bot",
-    },
-    body: "grant_type=client_credentials",
-  });
-  if (!resp.ok) throw new Error(`Reddit auth failed: ${resp.status} ${await resp.text()}`);
-  const json = await resp.json();
-  return json.access_token;
-}
-
-async function fetchSubredditPosts(subreddit: string, token: string, windowDays: number): Promise<Post[]> {
+async function fetchSubredditPosts(subreddit: string, windowDays: number): Promise<Post[]> {
   const cutoff = Date.now() / 1000 - windowDays * 86400;
   const posts: Post[] = [];
 
   for (const listing of ["top", "new"] as const) {
-    const params = new URLSearchParams({ limit: "50", t: "month" });
-    const resp = await fetch(`https://oauth.reddit.com/r/${subreddit}/${listing}.json?${params}`, {
-      headers: {
-        Authorization: `bearer ${token}`,
-        "User-Agent": "IdeaMiner/1.0 by u/ideaminer_bot",
-      },
+    const params = new URLSearchParams({ limit: "100", t: "month" });
+    const url = `https://www.reddit.com/r/${subreddit}/${listing}.json?${params}`;
+    const resp = await fetch(url, {
+      headers: { "User-Agent": "IdeaMiner/1.0" },
     });
     if (!resp.ok) continue;
     const json = await resp.json();
@@ -325,8 +307,8 @@ Deno.serve(async (req) => {
       .eq("user_id", user.id)
       .maybeSingle();
 
-    if (!settings?.reddit_client_id || !settings?.anthropic_api_key) {
-      return new Response(JSON.stringify({ error: "Missing API keys in settings" }), {
+    if (!settings?.anthropic_api_key) {
+      return new Response(JSON.stringify({ error: "Missing Anthropic API key in settings" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -346,13 +328,10 @@ Deno.serve(async (req) => {
     const minScore = settings.min_score ?? 10;
     const minComments = settings.min_comments ?? 5;
 
-    // Stage 1: Get Reddit token
-    const token = await getRedditToken(settings.reddit_client_id, settings.reddit_client_secret);
-
-    // Stage 2: Ingest posts
+    // Stage 1: Ingest posts via public Reddit JSON (no auth needed)
     const allPosts: Post[] = [];
     for (const subreddit of SUBREDDITS) {
-      const posts = await fetchSubredditPosts(subreddit, token, windowDays);
+      const posts = await fetchSubredditPosts(subreddit, windowDays);
       allPosts.push(...posts);
     }
 

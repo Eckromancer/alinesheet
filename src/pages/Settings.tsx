@@ -106,28 +106,6 @@ export default function Settings() {
       <main className="max-w-2xl mx-auto px-4 py-8">
         <form onSubmit={save} className="space-y-8">
 
-          {/* Reddit */}
-          <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
-            <div>
-              <h2 className="font-semibold text-white">Reddit API</h2>
-              <p className="text-sm text-gray-400 mt-0.5">
-                Create a "script" app at{" "}
-                <a href="https://www.reddit.com/prefs/apps" target="_blank" rel="noopener noreferrer"
-                  className="text-orange-400 hover:underline">reddit.com/prefs/apps</a>{" "}
-                → click "create another app" → type: script.
-              </p>
-            </div>
-            <SecretInput
-              id="reddit_client_id" label="Client ID" value={form.reddit_client_id}
-              onChange={set("reddit_client_id")} placeholder="14-char alphanumeric"
-              hint="Shown below the app name on the preferences page"
-            />
-            <SecretInput
-              id="reddit_client_secret" label="Client Secret" value={form.reddit_client_secret}
-              onChange={set("reddit_client_secret")} placeholder="Longer secret string"
-            />
-          </section>
-
           {/* Anthropic */}
           <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
             <div>
