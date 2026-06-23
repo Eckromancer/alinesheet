@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { calculatePrivateValuation, type BusinessType, type ValuationResult } from "./valuationEngine";
+import { getLiveMarketMultiples } from "./multiplesEngine";
 
 export interface RawIdeaData {
   title: string;
@@ -29,15 +30,21 @@ export interface PipelineResult {
 }
 
 export async function processScrapedIdeaPipeline(
-  rawRedditData: RawIdeaData
+  rawRedditData: RawIdeaData,
+  alphaVantageApiKey?: string
 ): Promise<PipelineResult | null> {
-  const { data, error } = await supabase.functions.invoke("evaluate-idea", {
-    body: {
-      idea_id: rawRedditData.idea_id,
-      redditData: rawRedditData,
-    },
-  });
+  // Fetch live market multiples and LLM evaluation in parallel
+  const [multiples, invokeResult] = await Promise.all([
+    getLiveMarketMultiples(alphaVantageApiKey),
+    supabase.functions.invoke("evaluate-idea", {
+      body: {
+        idea_id: rawRedditData.idea_id,
+        redditData: rawRedditData,
+      },
+    }),
+  ]);
 
+  const { data, error } = invokeResult;
   if (error || data?.error) {
     throw new Error(error?.message ?? data?.error ?? "Evaluation failed");
   }
@@ -46,7 +53,7 @@ export async function processScrapedIdeaPipeline(
   const { projected_attainable_arr_usd } = evaluation.scraped_metrics;
   const { business_type } = evaluation.classification;
 
-  const valuation = calculatePrivateValuation(projected_attainable_arr_usd, business_type);
+  const valuation = calculatePrivateValuation(projected_attainable_arr_usd, business_type, multiples);
 
   if (!valuation.passesElitePrivateThreshold) {
     return null;

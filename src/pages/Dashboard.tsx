@@ -335,13 +335,18 @@ export default function Dashboard() {
     setEvaluatingId(idea.id);
     toast.info("Running financial extraction…");
     try {
-      const result = await processScrapedIdeaPipeline({
-        idea_id: idea.id,
-        title: idea.summary,
-        selftext: idea.unmet_need ?? "",
-        summary: idea.summary,
-        unmet_need: idea.unmet_need ?? undefined,
-      });
+      const { data: settings } = await supabase
+        .from("user_settings").select("alpha_vantage_api_key").maybeSingle();
+      const result = await processScrapedIdeaPipeline(
+        {
+          idea_id: idea.id,
+          title: idea.summary,
+          selftext: idea.unmet_need ?? "",
+          summary: idea.summary,
+          unmet_need: idea.unmet_need ?? undefined,
+        },
+        settings?.alpha_vantage_api_key ?? undefined
+      );
       if (!result) {
         toast.warning("Below unicorn threshold — idea filtered out.");
         return;

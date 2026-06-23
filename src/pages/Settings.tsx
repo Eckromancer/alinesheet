@@ -12,6 +12,7 @@ interface Settings {
   reddit_client_secret: string;
   anthropic_api_key: string;
   brave_search_api_key: string;
+  alpha_vantage_api_key: string;
   scan_window_days: number;
   min_score: number;
   min_comments: number;
@@ -60,6 +61,7 @@ export default function Settings() {
     reddit_client_secret: "",
     anthropic_api_key: "",
     brave_search_api_key: "",
+    alpha_vantage_api_key: "",
     scan_window_days: 30,
     min_score: 10,
     min_comments: 5,
@@ -133,6 +135,22 @@ export default function Settings() {
               onChange={set("brave_search_api_key")} placeholder="BSA..."
               helpUrl="https://api.search.brave.com/app/keys"
               helpLabel="Get from Brave"
+            />
+          </section>
+
+          {/* Alpha Vantage */}
+          <section className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
+            <div>
+              <h2 className="font-semibold text-white">Alpha Vantage <span className="text-gray-500 font-normal text-sm">(optional)</span></h2>
+              <p className="text-sm text-gray-400 mt-0.5">
+                Enables live tech-sector P/E adjustments to private market multiples. Free tier: 25 calls/day.
+              </p>
+            </div>
+            <SecretInput
+              id="alpha_vantage_api_key" label="API Key" value={form.alpha_vantage_api_key}
+              onChange={set("alpha_vantage_api_key")} placeholder="ABCDEF123..."
+              helpUrl="https://www.alphavantage.co/support/#api-key"
+              helpLabel="Get free key"
             />
           </section>
 

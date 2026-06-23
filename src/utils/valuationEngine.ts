@@ -20,14 +20,16 @@ export interface ValuationResult {
 }
 
 /**
- * Calculates valuation based on estimated market size capture and modern multiples
+ * Calculates valuation based on estimated market size capture and modern multiples.
+ * Pass `multiples` to override the static defaults with live market data.
  */
 export function calculatePrivateValuation(
   projectedARR: number,
-  businessType: BusinessType | string
+  businessType: BusinessType | string,
+  multiples: Partial<typeof MARKET_MULTIPLES> = MARKET_MULTIPLES
 ): ValuationResult {
   const multiple =
-    MARKET_MULTIPLES[businessType as BusinessType] ?? MARKET_MULTIPLES.STANDARD_B2B_SAAS;
+    multiples[businessType as BusinessType] ?? MARKET_MULTIPLES[businessType as BusinessType] ?? MARKET_MULTIPLES.STANDARD_B2B_SAAS;
   const estimatedValuation = projectedARR * multiple;
 
   const TARGET_THRESHOLD = 1_000_000_000;
