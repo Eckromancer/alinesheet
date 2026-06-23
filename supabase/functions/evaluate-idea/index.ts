@@ -23,11 +23,14 @@ You MUST respond with ONLY a valid JSON object matching this exact schema — no
   "vulnerability_bottlenecks": [<string>, ...],
   "moat_assessment": <string, one sentence>,
   "recommended_gtm": <string, one sentence>,
-  "verdict": <string, two sentences max>
+  "verdict": <string, two sentences max>,
+  "projected_arr_usd": <integer, realistic 5-year peak ARR in USD if executed well>,
+  "business_type": <"ELITE_AGENTIC_ORCHESTRATION" | "STANDARD_B2B_SAAS" | "COMPLEX_MARKETPLACE" | "THIN_WRAPPER_CONSUMER">
 }
 
 Tier mapping: S=85-100, A=70-84, B=50-69, C=30-49, D=0-29.
-unicorn_potential_score = weighted average: capital_efficiency×20% + ai_native_defensibility×25% + market_scale×25% + timing_score×15% + execution_risk×15%, scaled to 0-100.`;
+unicorn_potential_score = weighted average: capital_efficiency×20% + ai_native_defensibility×25% + market_scale×25% + timing_score×15% + execution_risk×15%, scaled to 0-100.
+business_type guide: ELITE_AGENTIC_ORCHESTRATION = AI-native, high automation, defensible data moat; STANDARD_B2B_SAAS = workflow software, recurring seats; COMPLEX_MARKETPLACE = two-sided, transaction fees; THIN_WRAPPER_CONSUMER = consumer app with low switching cost.`;
 
 export interface EvaluationResult {
   unicorn_potential_score: number;

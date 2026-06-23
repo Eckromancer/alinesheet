@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Settings, LogOut, Download, RefreshCw, Star, StarOff, ExternalLink, Zap, X } from "lucide-react";
+import { Settings, LogOut, Download, RefreshCw, Star, StarOff, ExternalLink, Zap, X, TrendingUp } from "lucide-react";
+import { calculatePrivateValuation, type BusinessType } from "@/utils/valuationEngine";
 
 interface EvaluationResult {
   unicorn_potential_score: number;
@@ -21,6 +22,8 @@ interface EvaluationResult {
   moat_assessment: string;
   recommended_gtm: string;
   verdict: string;
+  projected_arr_usd?: number;
+  business_type?: BusinessType;
 }
 
 interface Idea {
@@ -136,6 +139,39 @@ function VCScorecard({ evaluation, onClose }: { evaluation: EvaluationResult; on
             </div>
           </div>
         )}
+
+        {/* Valuation */}
+        {evaluation.projected_arr_usd && evaluation.business_type && (() => {
+          const v = calculatePrivateValuation(evaluation.projected_arr_usd, evaluation.business_type);
+          return (
+            <div className="mx-6 mb-4 rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-3">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="h-4 w-4 text-orange-400" />
+                <p className="text-xs text-gray-400 uppercase tracking-widest">Private Market Valuation</p>
+              </div>
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className={`text-2xl font-black ${v.passesElitePrivateThreshold ? "text-yellow-400" : "text-white"}`}>
+                    {v.formattedValuation}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">{v.multipleUsed} · {evaluation.business_type.replace(/_/g, " ")}</p>
+                </div>
+                {v.passesElitePrivateThreshold ? (
+                  <span className="text-xs bg-yellow-400/20 text-yellow-300 border border-yellow-500/40 rounded px-2 py-1 font-bold">
+                    🦄 UNICORN THRESHOLD
+                  </span>
+                ) : (
+                  <div className="text-right">
+                    <p className="text-xs text-gray-500">Gap to unicorn</p>
+                    <p className="text-sm text-gray-400 font-semibold">
+                      {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v.gapToThresholdUSD)}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Text fields */}
         <div className="px-6 pb-4 space-y-3">
