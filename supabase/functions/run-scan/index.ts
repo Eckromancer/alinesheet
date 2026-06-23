@@ -61,27 +61,43 @@ async function fetchSubredditPosts(subreddit: string, windowDays: number): Promi
 
   for (const listing of ["top", "new"] as const) {
     const params = new URLSearchParams({ limit: "100", t: "month" });
-    const url = `https://www.reddit.com/r/${subreddit}/${listing}.json?${params}`;
-    const resp = await fetch(url, {
-      headers: { "User-Agent": "IdeaMiner/1.0" },
-    });
-    if (!resp.ok) continue;
-    const json = await resp.json();
-    const children = json?.data?.children ?? [];
+    // Try www first, fall back to old.reddit.com
+    const urls = [
+      `https://www.reddit.com/r/${subreddit}/${listing}.json?${params}`,
+      `https://old.reddit.com/r/${subreddit}/${listing}.json?${params}`,
+    ];
+
+    let json: Record<string, unknown> | null = null;
+    for (const url of urls) {
+      const resp = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; IdeaMiner/1.0; +https://reddit-idea-miner.netlify.app)",
+          "Accept": "application/json, text/javascript, */*",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      });
+      if (resp.ok) {
+        json = await resp.json();
+        break;
+      }
+      console.log(`Reddit ${listing} for r/${subreddit} returned ${resp.status} from ${url}`);
+    }
+    if (!json) continue;
+    const children: unknown[] = (json as { data?: { children?: unknown[] } })?.data?.children ?? [];
 
     for (const child of children) {
-      const p = child.data;
-      if (!p || p.created_utc < cutoff) continue;
+      const p = (child as { data?: Record<string, unknown> })?.data;
+      if (!p || (p.created_utc as number) < cutoff) continue;
       if (posts.some((x) => x.reddit_id === p.id)) continue;
       posts.push({
-        reddit_id: p.id,
+        reddit_id: p.id as string,
         subreddit,
-        title: p.title ?? "",
-        body: p.selftext ?? "",
-        score: p.score ?? 0,
-        num_comments: p.num_comments ?? 0,
-        created_utc: p.created_utc,
-        permalink: p.permalink,
+        title: (p.title as string) ?? "",
+        body: (p.selftext as string) ?? "",
+        score: (p.score as number) ?? 0,
+        num_comments: (p.num_comments as number) ?? 0,
+        created_utc: p.created_utc as number,
+        permalink: p.permalink as string,
       });
     }
   }
