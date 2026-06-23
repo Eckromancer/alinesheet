@@ -9,21 +9,16 @@ import { Settings, LogOut, Download, RefreshCw, Star, StarOff, ExternalLink, Zap
 import { calculatePrivateValuation, type BusinessType } from "@/utils/valuationEngine";
 
 interface EvaluationResult {
-  unicorn_potential_score: number;
-  tier: "S" | "A" | "B" | "C" | "D";
-  weighted_scores: {
-    capital_efficiency: number;
-    ai_native_defensibility: number;
-    market_scale: number;
-    timing_score: number;
-    execution_risk: number;
+  scraped_metrics: {
+    identified_pain_point: string;
+    implied_pricing_power_usd: number;
+    estimated_addressable_enterprise_accounts: number;
+    projected_attainable_arr_usd: number;
   };
-  vulnerability_bottlenecks: string[];
-  moat_assessment: string;
-  recommended_gtm: string;
-  verdict: string;
-  projected_arr_usd?: number;
-  business_type?: BusinessType;
+  classification: {
+    business_type: BusinessType;
+    rationale: string;
+  };
 }
 
 interface Idea {
@@ -67,29 +62,33 @@ function ScoreDot({ score }: { score: number | null }) {
   );
 }
 
-function TierBadge({ tier }: { tier: EvaluationResult["tier"] }) {
-  const colors: Record<string, string> = {
-    S: "bg-yellow-400 text-black font-black",
-    A: "bg-green-500 text-black font-bold",
-    B: "bg-blue-500 text-white font-bold",
-    C: "bg-orange-500 text-white font-bold",
-    D: "bg-red-600 text-white font-bold",
-  };
+const BUSINESS_TYPE_SHORT: Record<string, string> = {
+  ELITE_AGENTIC_ORCHESTRATION: "AI",
+  STANDARD_B2B_SAAS: "B2B",
+  COMPLEX_MARKETPLACE: "MKT",
+  THIN_WRAPPER_CONSUMER: "CON",
+};
+
+const BUSINESS_TYPE_COLORS: Record<string, string> = {
+  ELITE_AGENTIC_ORCHESTRATION: "bg-yellow-400 text-black font-black",
+  STANDARD_B2B_SAAS: "bg-green-500 text-black font-bold",
+  COMPLEX_MARKETPLACE: "bg-blue-500 text-white font-bold",
+  THIN_WRAPPER_CONSUMER: "bg-gray-600 text-white font-bold",
+};
+
+function BusinessTypeBadge({ type }: { type: string }) {
   return (
-    <span className={`inline-flex items-center justify-center w-7 h-7 rounded text-sm ${colors[tier] ?? "bg-gray-600 text-white"}`}>
-      {tier}
+    <span className={`inline-flex items-center justify-center w-10 h-7 rounded text-xs ${BUSINESS_TYPE_COLORS[type] ?? "bg-gray-600 text-white"}`}>
+      {BUSINESS_TYPE_SHORT[type] ?? "?"}
     </span>
   );
 }
 
 function VCScorecard({ evaluation, onClose }: { evaluation: EvaluationResult; onClose: () => void }) {
-  const scoreLabels: Record<string, string> = {
-    capital_efficiency: "Capital Efficiency",
-    ai_native_defensibility: "AI Defensibility",
-    market_scale: "Market Scale",
-    timing_score: "Timing",
-    execution_risk: "Execution Risk",
-  };
+  const { scraped_metrics: m, classification: c } = evaluation;
+  const v = calculatePrivateValuation(m.projected_attainable_arr_usd, c.business_type);
+  const fmt = (n: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+  const fmtNum = (n: number) => new Intl.NumberFormat("en-US", { notation: "compact" }).format(n);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -97,12 +96,10 @@ function VCScorecard({ evaluation, onClose }: { evaluation: EvaluationResult; on
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
           <div className="flex items-center gap-3">
-            <TierBadge tier={evaluation.tier} />
+            <BusinessTypeBadge type={c.business_type} />
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-widest">VC Scorecard</p>
-              <p className="text-white font-bold text-lg leading-none">
-                {evaluation.unicorn_potential_score}<span className="text-gray-400 text-sm font-normal">/100</span>
-              </p>
+              <p className="text-xs text-gray-400 uppercase tracking-widest">Private Market Analysis</p>
+              <p className="text-white font-bold text-sm leading-tight">{c.business_type.replace(/_/g, " ")}</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors">
@@ -110,83 +107,61 @@ function VCScorecard({ evaluation, onClose }: { evaluation: EvaluationResult; on
           </button>
         </div>
 
-        {/* Weighted scores */}
-        <div className="px-6 py-4 space-y-2">
-          {Object.entries(evaluation.weighted_scores).map(([key, val]) => (
-            <div key={key} className="flex items-center justify-between">
-              <span className="text-sm text-gray-400">{scoreLabels[key] ?? key}</span>
-              <div className="flex items-center gap-2">
-                <div className="w-32 bg-gray-800 rounded-full h-1.5">
-                  <div
-                    className="h-1.5 rounded-full bg-orange-500"
-                    style={{ width: `${(val / 10) * 100}%` }}
-                  />
-                </div>
-                <span className="text-white text-sm w-4 text-right">{val}</span>
-              </div>
-            </div>
-          ))}
+        {/* Pain point */}
+        <div className="px-6 pt-4 pb-3">
+          <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Identified Pain Point</p>
+          <p className="text-sm text-gray-200">{m.identified_pain_point}</p>
         </div>
 
-        {/* Bottlenecks */}
-        {evaluation.vulnerability_bottlenecks?.length > 0 && (
-          <div className="px-6 pb-3">
-            <p className="text-xs text-gray-500 uppercase tracking-widest mb-2">Vulnerability Bottlenecks</p>
-            <div className="flex flex-wrap gap-1.5">
-              {evaluation.vulnerability_bottlenecks.map((b, i) => (
-                <span key={i} className="text-xs bg-red-950 text-red-300 border border-red-800 rounded px-2 py-0.5">{b}</span>
-              ))}
-            </div>
+        {/* Metrics grid */}
+        <div className="px-6 pb-4 grid grid-cols-3 gap-3">
+          <div className="bg-gray-800 rounded-lg px-3 py-2.5">
+            <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Pricing Power</p>
+            <p className="text-white font-bold">{fmt(m.implied_pricing_power_usd)}</p>
+            <p className="text-xs text-gray-500">per account / yr</p>
           </div>
-        )}
+          <div className="bg-gray-800 rounded-lg px-3 py-2.5">
+            <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">TAM Accounts</p>
+            <p className="text-white font-bold">{fmtNum(m.estimated_addressable_enterprise_accounts)}</p>
+            <p className="text-xs text-gray-500">addressable</p>
+          </div>
+          <div className="bg-gray-800 rounded-lg px-3 py-2.5">
+            <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Year 5 ARR</p>
+            <p className="text-white font-bold">{fmt(m.projected_attainable_arr_usd)}</p>
+            <p className="text-xs text-gray-500">attainable</p>
+          </div>
+        </div>
 
         {/* Valuation */}
-        {evaluation.projected_arr_usd && evaluation.business_type && (() => {
-          const v = calculatePrivateValuation(evaluation.projected_arr_usd, evaluation.business_type);
-          return (
-            <div className="mx-6 mb-4 rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-3">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="h-4 w-4 text-orange-400" />
-                <p className="text-xs text-gray-400 uppercase tracking-widest">Private Market Valuation</p>
-              </div>
-              <div className="flex items-end justify-between">
-                <div>
-                  <p className={`text-2xl font-black ${v.passesElitePrivateThreshold ? "text-yellow-400" : "text-white"}`}>
-                    {v.formattedValuation}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-0.5">{v.multipleUsed} · {evaluation.business_type.replace(/_/g, " ")}</p>
-                </div>
-                {v.passesElitePrivateThreshold ? (
-                  <span className="text-xs bg-yellow-400/20 text-yellow-300 border border-yellow-500/40 rounded px-2 py-1 font-bold">
-                    🦄 UNICORN THRESHOLD
-                  </span>
-                ) : (
-                  <div className="text-right">
-                    <p className="text-xs text-gray-500">Gap to unicorn</p>
-                    <p className="text-sm text-gray-400 font-semibold">
-                      {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(v.gapToThresholdUSD)}
-                    </p>
-                  </div>
-                )}
-              </div>
+        <div className="mx-6 mb-4 rounded-lg border border-gray-700 bg-gray-800/60 px-4 py-3">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp className="h-4 w-4 text-orange-400" />
+            <p className="text-xs text-gray-400 uppercase tracking-widest">Private Market Valuation</p>
+          </div>
+          <div className="flex items-end justify-between">
+            <div>
+              <p className={`text-2xl font-black ${v.passesElitePrivateThreshold ? "text-yellow-400" : "text-white"}`}>
+                {v.formattedValuation}
+              </p>
+              <p className="text-xs text-gray-500 mt-0.5">{v.multipleUsed}</p>
             </div>
-          );
-        })()}
+            {v.passesElitePrivateThreshold ? (
+              <span className="text-xs bg-yellow-400/20 text-yellow-300 border border-yellow-500/40 rounded px-2 py-1 font-bold">
+                🦄 UNICORN THRESHOLD
+              </span>
+            ) : (
+              <div className="text-right">
+                <p className="text-xs text-gray-500">Gap to unicorn</p>
+                <p className="text-sm text-gray-400 font-semibold">{fmt(v.gapToThresholdUSD)}</p>
+              </div>
+            )}
+          </div>
+        </div>
 
-        {/* Text fields */}
-        <div className="px-6 pb-4 space-y-3">
-          <div>
-            <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Moat</p>
-            <p className="text-sm text-gray-300">{evaluation.moat_assessment}</p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Go-to-Market</p>
-            <p className="text-sm text-gray-300">{evaluation.recommended_gtm}</p>
-          </div>
-          <div className="bg-gray-800 rounded-lg px-4 py-3">
-            <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Verdict</p>
-            <p className="text-sm text-white">{evaluation.verdict}</p>
-          </div>
+        {/* Rationale */}
+        <div className="px-6 pb-5">
+          <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Classification Rationale</p>
+          <p className="text-sm text-gray-300">{c.rationale}</p>
         </div>
       </div>
     </div>
@@ -269,7 +244,7 @@ function IdeaRow({ idea, rank, onToggleSave, onEvaluate }: {
           {idea.evaluation ? (
             <button onClick={() => setShowCard(true)}
               className="flex items-center gap-1 text-xs text-yellow-400 hover:text-yellow-300 transition-colors">
-              <TierBadge tier={idea.evaluation.tier} />
+              <BusinessTypeBadge type={idea.evaluation.classification.business_type} />
             </button>
           ) : (
             <button onClick={() => onEvaluate(idea)}

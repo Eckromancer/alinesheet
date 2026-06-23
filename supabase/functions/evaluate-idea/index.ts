@@ -6,46 +6,44 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `You are an elite Venture Capital Investment Principal specializing in 2026/2027 macroeconomic trends. Evaluate raw scraped app concepts and calculate their quantitative unicorn potential based on capital efficiency, AI-native defensibility, and market scale.
+const SYSTEM_PROMPT = `You are an institutional venture analyst. Your core objective is to analyze scraped text data, extract underlying economic metrics, and structure them into valid JSON for our calculation engine.
 
-You MUST respond with ONLY a valid JSON object matching this exact schema — no markdown, no explanation, no code fences:
+### EXTRACTION & INFERENCE RULES
+1. Currency Normalization: Convert all local currencies, pricing mentions, or budget complaints into standardized USD.
+2. Market Capture Mapping: Estimate a conservative Year 5 Annual Recurring Revenue (ARR) based on the size of the user base complaining and a standard contract value (e.g., $50/month for consumer, $5,000/month for enterprise).
+3. Business Classification: Categorize the architecture into one of these exact keys:
+   - "ELITE_AGENTIC_ORCHESTRATION" (Deep automation, sovereign data, complex workflows)
+   - "STANDARD_B2B_SAAS" (Standard operational workflow systems)
+   - "COMPLEX_MARKETPLACE" (Connecting buyers/sellers, handling logistics)
+   - "THIN_WRAPPER_CONSUMER" (Simple features easily replaced by platform updates)
+
+### REQUIRED OUTPUT SCHEMA
+You must output strictly valid JSON. Do not include markdown codeblocks or conversational text.
 
 {
-  "unicorn_potential_score": <integer 0-100>,
-  "tier": <"S" | "A" | "B" | "C" | "D">,
-  "weighted_scores": {
-    "capital_efficiency": <integer 1-10>,
-    "ai_native_defensibility": <integer 1-10>,
-    "market_scale": <integer 1-10>,
-    "timing_score": <integer 1-10>,
-    "execution_risk": <integer 1-10, 10=lowest risk>
+  "scraped_metrics": {
+    "identified_pain_point": "<concise description of the core problem>",
+    "implied_pricing_power_usd": <integer, estimated annual contract value per customer in USD>,
+    "estimated_addressable_enterprise_accounts": <integer, realistic TAM account count>,
+    "projected_attainable_arr_usd": <integer, conservative Year 5 ARR in USD>
   },
-  "vulnerability_bottlenecks": [<string>, ...],
-  "moat_assessment": <string, one sentence>,
-  "recommended_gtm": <string, one sentence>,
-  "verdict": <string, two sentences max>,
-  "projected_arr_usd": <integer, realistic 5-year peak ARR in USD if executed well>,
-  "business_type": <"ELITE_AGENTIC_ORCHESTRATION" | "STANDARD_B2B_SAAS" | "COMPLEX_MARKETPLACE" | "THIN_WRAPPER_CONSUMER">
-}
-
-Tier mapping: S=85-100, A=70-84, B=50-69, C=30-49, D=0-29.
-unicorn_potential_score = weighted average: capital_efficiency×20% + ai_native_defensibility×25% + market_scale×25% + timing_score×15% + execution_risk×15%, scaled to 0-100.
-business_type guide: ELITE_AGENTIC_ORCHESTRATION = AI-native, high automation, defensible data moat; STANDARD_B2B_SAAS = workflow software, recurring seats; COMPLEX_MARKETPLACE = two-sided, transaction fees; THIN_WRAPPER_CONSUMER = consumer app with low switching cost.`;
+  "classification": {
+    "business_type": <"ELITE_AGENTIC_ORCHESTRATION" | "STANDARD_B2B_SAAS" | "COMPLEX_MARKETPLACE" | "THIN_WRAPPER_CONSUMER">,
+    "rationale": "<one sentence explaining the classification>"
+  }
+}`;
 
 export interface EvaluationResult {
-  unicorn_potential_score: number;
-  tier: "S" | "A" | "B" | "C" | "D";
-  weighted_scores: {
-    capital_efficiency: number;
-    ai_native_defensibility: number;
-    market_scale: number;
-    timing_score: number;
-    execution_risk: number;
+  scraped_metrics: {
+    identified_pain_point: string;
+    implied_pricing_power_usd: number;
+    estimated_addressable_enterprise_accounts: number;
+    projected_attainable_arr_usd: number;
   };
-  vulnerability_bottlenecks: string[];
-  moat_assessment: string;
-  recommended_gtm: string;
-  verdict: string;
+  classification: {
+    business_type: "ELITE_AGENTIC_ORCHESTRATION" | "STANDARD_B2B_SAAS" | "COMPLEX_MARKETPLACE" | "THIN_WRAPPER_CONSUMER";
+    rationale: string;
+  };
 }
 
 export async function evaluateScrapedIdea(
