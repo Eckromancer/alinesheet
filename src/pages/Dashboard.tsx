@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { Settings, LogOut, Download, RefreshCw, Star, StarOff, ExternalLink, Zap, X, TrendingUp } from "lucide-react";
 import { calculatePrivateValuation, type BusinessType } from "@/utils/valuationEngine";
+import { processScrapedIdeaPipeline } from "@/utils/ideaPipeline";
 
 interface EvaluationResult {
   scraped_metrics: {
@@ -332,25 +333,26 @@ export default function Dashboard() {
 
   const evaluateIdea = async (idea: Idea) => {
     setEvaluatingId(idea.id);
-    toast.info("Running VC evaluation…");
-    const { data, error } = await supabase.functions.invoke("evaluate-idea", {
-      body: {
+    toast.info("Running financial extraction…");
+    try {
+      const result = await processScrapedIdeaPipeline({
         idea_id: idea.id,
-        redditData: {
-          title: idea.summary,
-          selftext: idea.unmet_need ?? "",
-          summary: idea.summary,
-          unmet_need: idea.unmet_need,
-        },
-      },
-    });
-    setEvaluatingId(null);
-    if (error || data?.error) {
-      toast.error(`Evaluation failed: ${error?.message ?? data?.error}`);
-      return;
+        title: idea.summary,
+        selftext: idea.unmet_need ?? "",
+        summary: idea.summary,
+        unmet_need: idea.unmet_need ?? undefined,
+      });
+      if (!result) {
+        toast.warning("Below unicorn threshold — idea filtered out.");
+        return;
+      }
+      setIdeas((prev) => prev.map((i) => i.id === idea.id ? { ...i, evaluation: result.evaluation } : i));
+      toast.success(`${result.valuation.formattedValuation} valuation — click the badge to view.`);
+    } catch (err) {
+      toast.error(`Evaluation failed: ${String(err)}`);
+    } finally {
+      setEvaluatingId(null);
     }
-    setIdeas((prev) => prev.map((i) => i.id === idea.id ? { ...i, evaluation: data as EvaluationResult } : i));
-    toast.success("VC scorecard ready — click the tier badge to view.");
   };
 
   const toggleSave = async (id: string, saved: boolean) => {
