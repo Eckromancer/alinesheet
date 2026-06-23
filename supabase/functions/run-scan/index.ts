@@ -5,33 +5,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SUBREDDITS = [
-  "SomebodyMakeThis",
-  "AppIdeas",
-  "Startup_Ideas",
-  "SaaS",
-  "smallbusiness",
-  "Entrepreneur",
-];
-
-const IDEA_SIGNAL_KEYWORDS = [
-  "i wish there was",
-  "someone should build",
+// HN Algolia search queries — each targets a different idea-signal phrase
+const SEARCH_QUERIES = [
   "is there an app",
-  "why doesn't",
-  "i'd pay for",
-  "i would pay",
-  "need an app",
-  "can't find",
-  "doesn't exist",
-  "nobody has built",
-  "should exist",
+  "someone should build",
+  "I wish there was",
   "looking for a tool",
+  "why doesn't exist",
+  "I would pay for",
+  "need a tool that",
+  "nobody has built",
+  "does a service exist",
+  "Ask HN: app idea",
 ];
 
 interface Post {
-  reddit_id: string;
-  subreddit: string;
+  reddit_id: string; // reused as generic post id
+  subreddit: string; // reused as source label
   title: string;
   body: string;
   score: number;
@@ -55,65 +45,93 @@ interface ScoredIdea {
   score_buildability: number;
 }
 
-async function fetchSubredditPosts(subreddit: string, windowDays: number): Promise<Post[]> {
-  const cutoff = Date.now() / 1000 - windowDays * 86400;
+async function fetchHNPosts(windowDays: number): Promise<Post[]> {
+  const cutoff = Math.floor(Date.now() / 1000 - windowDays * 86400);
+  const seen = new Set<string>();
   const posts: Post[] = [];
 
-  for (const listing of ["top", "new"] as const) {
-    const params = new URLSearchParams({ limit: "100", t: "month" });
-    // Try www first, fall back to old.reddit.com
-    const urls = [
-      `https://www.reddit.com/r/${subreddit}/${listing}.json?${params}`,
-      `https://old.reddit.com/r/${subreddit}/${listing}.json?${params}`,
-    ];
+  for (const query of SEARCH_QUERIES) {
+    const params = new URLSearchParams({
+      query,
+      tags: "story",
+      hitsPerPage: "50",
+      numericFilters: `created_at_i>${cutoff}`,
+    });
 
-    let json: Record<string, unknown> | null = null;
-    for (const url of urls) {
+    const url = `https://hn.algolia.com/api/v1/search?${params}`;
+    try {
       const resp = await fetch(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; IdeaMiner/1.0; +https://reddit-idea-miner.netlify.app)",
-          "Accept": "application/json, text/javascript, */*",
-          "Accept-Language": "en-US,en;q=0.9",
-        },
+        headers: { "User-Agent": "IdeaMiner/1.0" },
       });
-      if (resp.ok) {
-        json = await resp.json();
-        break;
+      if (!resp.ok) {
+        console.log(`HN search failed for "${query}": ${resp.status}`);
+        continue;
       }
-      console.log(`Reddit ${listing} for r/${subreddit} returned ${resp.status} from ${url}`);
-    }
-    if (!json) continue;
-    const children: unknown[] = (json as { data?: { children?: unknown[] } })?.data?.children ?? [];
+      const json = await resp.json();
+      const hits = json.hits ?? [];
 
-    for (const child of children) {
-      const p = (child as { data?: Record<string, unknown> })?.data;
-      if (!p || (p.created_utc as number) < cutoff) continue;
-      if (posts.some((x) => x.reddit_id === p.id)) continue;
-      posts.push({
-        reddit_id: p.id as string,
-        subreddit,
-        title: (p.title as string) ?? "",
-        body: (p.selftext as string) ?? "",
-        score: (p.score as number) ?? 0,
-        num_comments: (p.num_comments as number) ?? 0,
-        created_utc: p.created_utc as number,
-        permalink: p.permalink as string,
-      });
+      for (const hit of hits) {
+        const id = String(hit.objectID);
+        if (seen.has(id)) continue;
+        seen.add(id);
+
+        posts.push({
+          reddit_id: id,
+          subreddit: "HackerNews",
+          title: hit.title ?? "",
+          body: hit.story_text ?? hit.comment_text ?? "",
+          score: hit.points ?? 0,
+          num_comments: hit.num_comments ?? 0,
+          created_utc: hit.created_at_i ?? 0,
+          permalink: `https://news.ycombinator.com/item?id=${id}`,
+        });
+      }
+    } catch (e) {
+      console.log(`HN fetch error for "${query}":`, e);
     }
   }
 
+  // Also fetch top Ask HN posts directly
+  try {
+    const askParams = new URLSearchParams({
+      query: "app tool software",
+      tags: "ask_hn",
+      hitsPerPage: "100",
+      numericFilters: `created_at_i>${cutoff}`,
+    });
+    const askResp = await fetch(`https://hn.algolia.com/api/v1/search?${askParams}`);
+    if (askResp.ok) {
+      const askJson = await askResp.json();
+      for (const hit of askJson.hits ?? []) {
+        const id = String(hit.objectID);
+        if (seen.has(id)) continue;
+        seen.add(id);
+        posts.push({
+          reddit_id: id,
+          subreddit: "HackerNews/AskHN",
+          title: hit.title ?? "",
+          body: hit.story_text ?? "",
+          score: hit.points ?? 0,
+          num_comments: hit.num_comments ?? 0,
+          created_utc: hit.created_at_i ?? 0,
+          permalink: `https://news.ycombinator.com/item?id=${id}`,
+        });
+      }
+    }
+  } catch (e) {
+    console.log("Ask HN fetch error:", e);
+  }
+
+  console.log(`Total HN posts fetched: ${posts.length}`);
   return posts;
 }
 
 function filterPosts(posts: Post[], minScore: number, minComments: number): Post[] {
   return posts.filter((p) => {
-    if (p.score < minScore && p.num_comments < minComments) return false;
-    const text = `${p.title} ${p.body}`.toLowerCase();
-    // Boost if contains idea-signal keywords, but don't exclude others
-    const hasSignal = IDEA_SIGNAL_KEYWORDS.some((kw) => text.includes(kw));
-    // For SomebodyMakeThis and AppIdeas, accept all that pass engagement
-    if (p.subreddit === "SomebodyMakeThis" || p.subreddit === "AppIdeas") return true;
-    return hasSignal || p.score >= minScore * 3;
+    // Accept if it meets engagement threshold OR is from Ask HN
+    if (p.subreddit === "HackerNews/AskHN") return true;
+    if (p.score >= minScore || p.num_comments >= minComments) return true;
+    return false;
   });
 }
 
@@ -122,7 +140,7 @@ async function extractIdeasBatch(posts: Post[], anthropicKey: string): Promise<A
     `[${i}] Title: ${p.title.slice(0, 200)}\nBody: ${p.body.slice(0, 400)}`
   ).join("\n\n---\n\n");
 
-  const prompt = `You are analyzing Reddit posts to find concrete product/app ideas.
+  const prompt = `You are analyzing posts from Hacker News and Reddit to find concrete product/app ideas.
 
 For each numbered post below, return a JSON array where each element has:
 - "index": the post index number
@@ -173,7 +191,7 @@ async function clusterAndDedup(
     return ideas.map((i) => ({ ...i, demand_count: 1, source_permalinks: [i.permalink] }));
   }
 
-  const prompt = `You have a list of app ideas extracted from Reddit. Group them by similarity — ideas that address the same core problem should be in the same group. Return a JSON array of groups, where each group has:
+  const prompt = `You have a list of app ideas extracted from tech forums. Group them by similarity — ideas that address the same core problem should be in the same group. Return a JSON array of groups, where each group has:
 - "representative": the best/clearest summary of the idea from the group (pick the best one or synthesize)
 - "unmet_need": best unmet need description
 - "implied_user": most specific user type ("consumer", "smb", "enterprise", or "developer")
@@ -199,7 +217,6 @@ Return only valid JSON, no other text.`;
   });
 
   if (!resp.ok) {
-    // fallback: no dedup
     return ideas.map((i) => ({ ...i, demand_count: 1, source_permalinks: [i.permalink] }));
   }
 
@@ -300,7 +317,6 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const authHeader = req.headers.get("Authorization");
 
-    // Create user-scoped client for RLS
     const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader ?? "" } },
     });
@@ -313,10 +329,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Service client for direct writes
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Load user settings
     const { data: settings } = await adminClient
       .from("user_settings")
       .select("*")
@@ -330,7 +344,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Create scan run
     const { data: scanRun, error: scanRunError } = await adminClient
       .from("scan_runs")
       .insert({ user_id: user.id, status: "running" })
@@ -344,17 +357,10 @@ Deno.serve(async (req) => {
     const minScore = settings.min_score ?? 10;
     const minComments = settings.min_comments ?? 5;
 
-    // Stage 1: Ingest posts via public Reddit JSON (no auth needed)
-    const allPosts: Post[] = [];
-    for (const subreddit of SUBREDDITS) {
-      const posts = await fetchSubredditPosts(subreddit, windowDays);
-      allPosts.push(...posts);
-    }
-
-    // Stage 3: Filter
+    const allPosts = await fetchHNPosts(windowDays);
     const filtered = filterPosts(allPosts, minScore, minComments);
+    console.log(`Posts after filter: ${filtered.length}`);
 
-    // Store raw posts
     if (filtered.length > 0) {
       await adminClient.from("reddit_posts").upsert(
         filtered.map((p) => ({
@@ -369,7 +375,6 @@ Deno.serve(async (req) => {
 
     await adminClient.from("scan_runs").update({ posts_ingested: filtered.length }).eq("id", scanRunId);
 
-    // Stage 4: Extract ideas in batches of 10
     const BATCH_SIZE = 10;
     const extractedIdeas: Array<ExtractedIdea & { permalink: string }> = [];
 
@@ -386,13 +391,11 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Stage 5: Cluster/dedup
-    const clustered = await clusterAndDedup(extractedIdeas, settings.anthropic_api_key);
+    console.log(`Extracted ideas: ${extractedIdeas.length}`);
 
-    // Stage 6: Score
+    const clustered = await clusterAndDedup(extractedIdeas, settings.anthropic_api_key);
     const scores = await scoreIdeas(clustered, settings.anthropic_api_key);
 
-    // Stage 7: Competition check for top 20
     const TOP_N = 20;
     const scored = clustered.map((idea, i) => {
       const s = scores[i] ?? { score_market: 3, score_demand: 3, score_competition: 3, score_novelty: 3, score_buildability: 3 };
@@ -408,7 +411,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Refine competition score for checked ideas
     for (const idea of topIdeas) {
       if (idea.competitors && idea.competitors !== "No obvious competitors found.") {
         const competitorCount = (idea.competitors.match(/;/g) ?? []).length + 1;
@@ -417,10 +419,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Re-sort after competition adjustment
     topIdeas.sort((a, b) => b.composite_score - a.composite_score);
 
-    // Save ideas
     if (topIdeas.length > 0) {
       await adminClient.from("ideas").insert(
         topIdeas.map((idea) => ({
