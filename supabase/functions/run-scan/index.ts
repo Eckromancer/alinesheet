@@ -46,7 +46,7 @@ async function fetchHNPosts(windowDays: number): Promise<Post[]> {
       query: q, tags: tag, hitsPerPage: "50",
       numericFilters: `created_at_i>${cutoff}`,
     });
-    return fetch(`https://hn.algolia.com/api/v1/search?${params}&cb=${Date.now()}`)
+    return fetch(`https://hn.algolia.com/api/v1/search?${params}`)
       .then(r => r.ok ? r.json() : { hits: [] })
       .catch(() => ({ hits: [] }));
   });
@@ -99,7 +99,7 @@ ${items}
 
 Return ONLY a valid JSON array. No markdown, no explanation.`;
 
-  const resp = await fetch(`https://api.anthropic.com/v1/messages?cb=${Date.now()}`, {
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": anthropicKey,
