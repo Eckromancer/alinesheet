@@ -175,11 +175,11 @@ export default function Dashboard() {
   const runScan = async () => {
     const { data: settings } = await supabase
       .from("user_settings")
-      .select("reddit_client_id, anthropic_api_key")
+      .select("anthropic_api_key")
       .maybeSingle();
 
-    if (!settings?.reddit_client_id || !settings?.anthropic_api_key) {
-      toast.error("Set up your API keys in Settings first.");
+    if (!settings?.anthropic_api_key) {
+      toast.error("Add your Anthropic API key in Settings first.");
       navigate("/settings");
       return;
     }
