@@ -152,12 +152,14 @@ function VCScorecard({ evaluation, onClose }: { evaluation: EvaluationResult; on
   );
 }
 
-function IdeaRow({ idea, rank, onToggleSave, onEvaluate }: {
+function IdeaRow({ idea, rank, onToggleSave, onEvaluate, onOpenValuation, evaluatingId }: {
   idea: Idea; rank: number;
   onToggleSave: (id: string, saved: boolean) => void;
   onEvaluate: (idea: Idea) => void;
+  onOpenValuation: (idea: Idea) => void;
+  evaluatingId: string | null;
 }) {
-  const [showCard, setShowCard] = useState(false);
+  const isEvaluating = evaluatingId === idea.id;
   const userColors: Record<string, string> = {
     consumer: "bg-blue-900 text-blue-300",
     smb: "bg-purple-900 text-purple-300",
@@ -166,85 +168,87 @@ function IdeaRow({ idea, rank, onToggleSave, onEvaluate }: {
   };
 
   return (
-    <>
-      {showCard && idea.evaluation && (
-        <VCScorecard evaluation={idea.evaluation} onClose={() => setShowCard(false)} />
-      )}
-      <tr className="border-b border-gray-800 hover:bg-gray-900/50 transition-colors">
-        <td className="py-3 px-3 text-center">
-          <span className="text-lg font-bold text-gray-500">#{rank}</span>
-        </td>
-        <td className="py-3 px-3 min-w-[220px]">
-          <div className="font-medium text-white text-sm">{idea.summary}</div>
-          {idea.unmet_need && (
-            <div className="text-xs text-gray-400 mt-1 line-clamp-2">{idea.unmet_need}</div>
-          )}
-        </td>
-        <td className="py-3 px-3">
-          {idea.implied_user && (
-            <Badge className={`text-xs ${userColors[idea.implied_user] ?? "bg-gray-700 text-gray-300"}`}>
-              {idea.implied_user}
-            </Badge>
-          )}
-        </td>
-        <td className="py-3 px-3 text-center">
-          <span className="text-white font-semibold">{idea.demand_count}</span>
-          <div className="text-xs text-gray-500">posts</div>
-        </td>
-        <td className="py-3 px-3">
-          <div className="text-xl font-bold text-orange-400 text-center">
-            {idea.composite_score ? idea.composite_score.toFixed(1) : "—"}
-          </div>
-        </td>
-        <td className="py-3 px-3">
-          <div className="space-y-1 text-xs text-gray-400">
-            <div className="flex items-center gap-2 justify-between"><span>Market</span><ScoreDot score={idea.score_market} /></div>
-            <div className="flex items-center gap-2 justify-between"><span>Demand</span><ScoreDot score={idea.score_demand} /></div>
-            <div className="flex items-center gap-2 justify-between"><span>Comp.</span><ScoreDot score={idea.score_competition} /></div>
-            <div className="flex items-center gap-2 justify-between"><span>Novel</span><ScoreDot score={idea.score_novelty} /></div>
-            <div className="flex items-center gap-2 justify-between"><span>Build</span><ScoreDot score={idea.score_buildability} /></div>
-          </div>
-        </td>
-        <td className="py-3 px-3 max-w-[200px]">
-          {idea.competitors ? (
-            <p className="text-xs text-gray-400 line-clamp-3">{idea.competitors}</p>
-          ) : (
-            <span className="text-xs text-gray-600">Not checked</span>
-          )}
-        </td>
-        <td className="py-3 px-3">
-          <div className="flex flex-wrap gap-1">
-            {idea.source_permalinks.slice(0, 3).map((link, i) => (
-              <a key={i} href={link.startsWith("http") ? link : `https://reddit.com${link}`}
-                target="_blank" rel="noopener noreferrer"
-                className="text-orange-400 hover:text-orange-300 transition-colors">
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            ))}
-          </div>
-        </td>
-        {/* VC Evaluate */}
-        <td className="py-3 px-3">
-          {idea.evaluation ? (
-            <button onClick={() => setShowCard(true)}
-              className="flex items-center gap-1 text-xs text-yellow-400 hover:text-yellow-300 transition-colors">
-              <BusinessTypeBadge type={idea.evaluation.classification.business_type} />
-            </button>
-          ) : (
-            <button onClick={() => onEvaluate(idea)}
-              className="flex items-center gap-1 text-xs text-gray-500 hover:text-orange-400 transition-colors whitespace-nowrap">
-              <Zap className="h-3.5 w-3.5" /> VC
-            </button>
-          )}
-        </td>
-        <td className="py-3 px-3">
-          <button onClick={() => onToggleSave(idea.id, !idea.saved)}
-            className="text-gray-500 hover:text-yellow-400 transition-colors">
-            {idea.saved ? <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" /> : <StarOff className="h-4 w-4" />}
+    <tr className="border-b border-gray-800 hover:bg-gray-900/50 transition-colors">
+      <td className="py-3 px-3 text-center">
+        <span className="text-lg font-bold text-gray-500">#{rank}</span>
+      </td>
+      <td className="py-3 px-3 min-w-[220px]">
+        <div className="font-medium text-white text-sm">{idea.summary}</div>
+        {idea.unmet_need && (
+          <div className="text-xs text-gray-400 mt-1 line-clamp-2">{idea.unmet_need}</div>
+        )}
+      </td>
+      <td className="py-3 px-3">
+        {idea.implied_user && (
+          <Badge className={`text-xs ${userColors[idea.implied_user] ?? "bg-gray-700 text-gray-300"}`}>
+            {idea.implied_user}
+          </Badge>
+        )}
+      </td>
+      <td className="py-3 px-3 text-center">
+        <span className="text-white font-semibold">{idea.demand_count}</span>
+        <div className="text-xs text-gray-500">posts</div>
+      </td>
+      <td className="py-3 px-3">
+        <div className="text-xl font-bold text-orange-400 text-center">
+          {idea.composite_score ? idea.composite_score.toFixed(1) : "—"}
+        </div>
+      </td>
+      <td className="py-3 px-3">
+        <div className="space-y-1 text-xs text-gray-400">
+          <div className="flex items-center gap-2 justify-between"><span>Market</span><ScoreDot score={idea.score_market} /></div>
+          <div className="flex items-center gap-2 justify-between"><span>Demand</span><ScoreDot score={idea.score_demand} /></div>
+          <div className="flex items-center gap-2 justify-between"><span>Comp.</span><ScoreDot score={idea.score_competition} /></div>
+          <div className="flex items-center gap-2 justify-between"><span>Novel</span><ScoreDot score={idea.score_novelty} /></div>
+          <div className="flex items-center gap-2 justify-between"><span>Build</span><ScoreDot score={idea.score_buildability} /></div>
+        </div>
+      </td>
+      <td className="py-3 px-3 max-w-[200px]">
+        {idea.competitors ? (
+          <p className="text-xs text-gray-400 line-clamp-3">{idea.competitors}</p>
+        ) : (
+          <span className="text-xs text-gray-600">Not checked</span>
+        )}
+      </td>
+      <td className="py-3 px-3">
+        <div className="flex flex-wrap gap-1">
+          {idea.source_permalinks.slice(0, 3).map((link, i) => (
+            <a key={i} href={link.startsWith("http") ? link : `https://reddit.com${link}`}
+              target="_blank" rel="noopener noreferrer"
+              className="text-orange-400 hover:text-orange-300 transition-colors">
+              <ExternalLink className="h-3.5 w-3.5" />
+            </a>
+          ))}
+        </div>
+      </td>
+      {/* VC column */}
+      <td className="py-3 px-3">
+        {idea.evaluation ? (
+          <button
+            onClick={() => onOpenValuation(idea)}
+            className="flex items-center gap-1 hover:scale-105 transition-transform"
+          >
+            <BusinessTypeBadge type={idea.evaluation.classification.business_type} />
           </button>
-        </td>
-      </tr>
-    </>
+        ) : (
+          <button
+            onClick={() => onEvaluate(idea)}
+            disabled={isEvaluating}
+            className="flex items-center gap-1 text-xs text-gray-500 hover:text-orange-400 transition-colors whitespace-nowrap disabled:cursor-wait"
+          >
+            {isEvaluating
+              ? <RefreshCw className="h-3.5 w-3.5 animate-spin text-orange-400" />
+              : <><Zap className="h-3.5 w-3.5" /> VC</>}
+          </button>
+        )}
+      </td>
+      <td className="py-3 px-3">
+        <button onClick={() => onToggleSave(idea.id, !idea.saved)}
+          className="text-gray-500 hover:text-yellow-400 transition-colors">
+          {idea.saved ? <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" /> : <StarOff className="h-4 w-4" />}
+        </button>
+      </td>
+    </tr>
   );
 }
 
@@ -256,6 +260,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
   const [evaluatingId, setEvaluatingId] = useState<string | null>(null);
+  const [selectedUnicorn, setSelectedUnicorn] = useState<Idea | null>(null);
 
   const fetchIdeas = useCallback(async () => {
     const { data: runData } = await supabase
@@ -451,24 +456,54 @@ export default function Dashboard() {
           ) : (
             <>
               <TabsContent value="all">
-                <IdeasTableView ideas={ideas} onToggleSave={toggleSave} onEvaluate={evaluateIdea} evaluatingId={evaluatingId} />
+                <IdeasTableView ideas={ideas} onToggleSave={toggleSave} onEvaluate={evaluateIdea} evaluatingId={evaluatingId} onOpenValuation={setSelectedUnicorn} />
               </TabsContent>
               <TabsContent value="saved">
-                <IdeasTableView ideas={savedIdeas} onToggleSave={toggleSave} onEvaluate={evaluateIdea} evaluatingId={evaluatingId} />
+                <IdeasTableView ideas={savedIdeas} onToggleSave={toggleSave} onEvaluate={evaluateIdea} evaluatingId={evaluatingId} onOpenValuation={setSelectedUnicorn} />
               </TabsContent>
             </>
           )}
         </Tabs>
       </main>
+
+      {/* Unicorn valuation overlay */}
+      {selectedUnicorn?.evaluation && (() => {
+        const ev = selectedUnicorn.evaluation!;
+        const v = calculatePrivateValuation(
+          ev.scraped_metrics.projected_attainable_arr_usd,
+          ev.classification.business_type
+        );
+        return (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+            onClick={() => setSelectedUnicorn(null)}
+          >
+            <div onClick={(e) => e.stopPropagation()}>
+              <ValuationGapCard
+                title={selectedUnicorn.summary}
+                businessType={ev.classification.business_type}
+                valuation={v}
+              />
+              <button
+                onClick={() => setSelectedUnicorn(null)}
+                className="mt-3 w-full text-xs text-slate-500 hover:text-slate-300 transition-colors text-center"
+              >
+                Click anywhere outside to close
+              </button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
 
-function IdeasTableView({ ideas, onToggleSave, onEvaluate, evaluatingId }: {
+function IdeasTableView({ ideas, onToggleSave, onEvaluate, evaluatingId, onOpenValuation }: {
   ideas: Idea[];
   onToggleSave: (id: string, saved: boolean) => void;
   onEvaluate: (idea: Idea) => void;
   evaluatingId: string | null;
+  onOpenValuation: (idea: Idea) => void;
 }) {
   if (ideas.length === 0) {
     return (
@@ -502,7 +537,9 @@ function IdeasTableView({ ideas, onToggleSave, onEvaluate, evaluatingId }: {
             <IdeaRow
               key={idea.id} idea={idea} rank={i + 1}
               onToggleSave={onToggleSave}
-              onEvaluate={evaluatingId ? () => {} : onEvaluate}
+              onEvaluate={onEvaluate}
+              onOpenValuation={onOpenValuation}
+              evaluatingId={evaluatingId}
             />
           ))}
         </tbody>
