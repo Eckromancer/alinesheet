@@ -159,7 +159,7 @@ export default function Dashboard() {
     fetchIdeas();
   }, [fetchIdeas]);
 
-  // Poll while a scan is running
+  // Poll while a scan is running; auto-clear if stuck > 3 minutes
   useEffect(() => {
     if (!scanning && lastRun?.status !== "running") return;
     const interval = setInterval(async () => {
@@ -168,9 +168,18 @@ export default function Dashboard() {
         setScanning(false);
         clearInterval(interval);
       }
+      // Detect stale scan (started > 3 min ago and still "running")
+      if (lastRun?.status === "running") {
+        const age = Date.now() - new Date(lastRun.started_at).getTime();
+        if (age > 180000) {
+          setScanning(false);
+          clearInterval(interval);
+          toast.error("Scan timed out. Try again.");
+        }
+      }
     }, 3000);
     return () => clearInterval(interval);
-  }, [scanning, lastRun?.status, fetchIdeas]);
+  }, [scanning, lastRun?.status, lastRun?.started_at, fetchIdeas]);
 
   const runScan = async () => {
     const { data: settings } = await supabase

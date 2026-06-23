@@ -358,8 +358,8 @@ Deno.serve(async (req) => {
     const minComments = settings.min_comments ?? 5;
 
     const allPosts = await fetchHNPosts(windowDays);
-    const filtered = filterPosts(allPosts, minScore, minComments);
-    console.log(`Posts after filter: ${filtered.length}`);
+    const filtered = filterPosts(allPosts, minScore, minComments).slice(0, 30);
+    console.log(`Posts after filter (capped at 30): ${filtered.length}`);
 
     if (filtered.length > 0) {
       await adminClient.from("reddit_posts").upsert(
