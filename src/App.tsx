@@ -1,44 +1,47 @@
+import { useEffect, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { supabase } from "@/integrations/supabase/client";
+import type { Session } from "@supabase/supabase-js";
 import Login from "./pages/Login";
-import Review from "./pages/Review";
-import FinalReview from "./pages/FinalReview";
-import Confirmation from "./pages/Confirmation";
-import Portal from "./pages/Portal";
-import ManagerDashboard from "./pages/ManagerDashboard";
-import ManagerHome from "./pages/ManagerHome";
-import Manager from "./pages/Manager";
-import Governance from "./pages/Governance";
-import Reports from "./pages/Reports";
+import Dashboard from "./pages/Dashboard";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
-import EmailGate from "./components/EmailGate";
 
 const queryClient = new QueryClient();
+
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => setSession(s));
+    return () => subscription.unsubscribe();
+  }, []);
+
+  if (session === undefined) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-950">
+      <div className="w-8 h-8 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  if (!session) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
+      <Toaster richColors />
       <BrowserRouter>
-        <EmailGate>
-          <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/review" element={<Review />} />
-            <Route path="/final" element={<FinalReview />} />
-            <Route path="/confirmation" element={<Confirmation />} />
-            <Route path="/portal" element={<Portal />} />
-            <Route path="/manager" element={<ManagerDashboard />} />
-            <Route path="/manager/home" element={<ManagerHome />} />
-            <Route path="/manager/submissions" element={<Manager />} />
-            <Route path="/manager/governance" element={<Governance />} />
-            <Route path="/manager/reports" element={<Reports />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </EmailGate>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<AuthGuard><Dashboard /></AuthGuard>} />
+          <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
