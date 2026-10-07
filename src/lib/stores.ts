@@ -33,7 +33,6 @@ const RAW: Array<[string, string, string | null]> = [
 ];
 
 export const STORES: StoreEntry[] = [
-  ...PILOTS,
   ...RAW.map(([code, name, dsa]) => ({
     code,
     name,
