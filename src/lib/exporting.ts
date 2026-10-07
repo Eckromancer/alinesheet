@@ -7,6 +7,7 @@ export function formatPrice(n: number | null | undefined) {
 
 export function rowsForExport(items: ReviewItem[], reviewer: string, store: string) {
   return items.map(({ product, review }) => ({
+    season: product.season ?? "",
     style_number: product.style_number,
     long_style_desc: product.long_style_desc,
     color: product.color,

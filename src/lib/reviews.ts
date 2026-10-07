@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
+import { sortSeasons } from "./seasons";
 
 export type Product = Tables<"products">;
 export type Review = Tables<"reviews">;
@@ -12,14 +13,27 @@ export interface ReviewItem {
   review: Review | null;
 }
 
-export async function fetchProducts(): Promise<Product[]> {
-  const { data, error } = await supabase
+export async function fetchProducts(season?: string): Promise<Product[]> {
+  let query = supabase
     .from("products")
     .select("*")
     .order("sort_order", { ascending: true })
     .order("style_number", { ascending: true });
+  if (season) query = query.eq("season", season);
+  const { data, error } = await query;
   if (error) throw error;
   return data ?? [];
+}
+
+export async function fetchSeasons(): Promise<string[]> {
+  const { data, error } = await supabase.from("products").select("season");
+  if (error) throw error;
+  return sortSeasons((data ?? []).map((row) => row.season ?? "").filter(Boolean));
+}
+
+export async function fetchLatestSeason(): Promise<string | null> {
+  const seasons = await fetchSeasons();
+  return seasons[0] ?? null;
 }
 
 export async function fetchReviewsFor(reviewer: string, store: string): Promise<Review[]> {
@@ -32,9 +46,10 @@ export async function fetchReviewsFor(reviewer: string, store: string): Promise<
   return data ?? [];
 }
 
-export async function fetchAll(reviewer: string, store: string): Promise<ReviewItem[]> {
+export async function fetchAll(reviewer: string, store: string, season?: string): Promise<ReviewItem[]> {
+  const activeSeason = season ?? await fetchLatestSeason();
   const [products, reviews] = await Promise.all([
-    fetchProducts(),
+    fetchProducts(activeSeason ?? undefined),
     fetchReviewsFor(reviewer, store),
   ]);
   const map = new Map(reviews.map((r) => [r.product_id, r]));
@@ -72,12 +87,14 @@ export async function upsertReview(input: {
   return data;
 }
 
-export async function submitAll(reviewer: string, store: string) {
+export async function submitAll(reviewer: string, store: string, productIds: string[]) {
+  if (productIds.length === 0) return;
   const { error } = await supabase
     .from("reviews")
     .update({ submission_status: "submitted", submitted_at: new Date().toISOString() })
     .eq("reviewer", reviewer)
     .eq("store", store)
+    .in("product_id", productIds)
     .eq("submission_status", "draft");
   if (error) throw error;
 }
