@@ -133,13 +133,13 @@ export default function Login() {
           {selected && !selected.dsa && (
             <div className="space-y-2">
               <Label htmlFor="dsa" className="text-xs uppercase tracking-widest text-muted-foreground">
-                {selected.code.startsWith("P") ? "Pilot tester name" : "DSA name (unassigned store)"}
+                DSA name (unassigned store)
               </Label>
               <Input
                 id="dsa"
                 value={dsaOverride}
                 onChange={(e) => setDsaOverride(e.target.value)}
-                placeholder={selected.code.startsWith("P") ? "Enter pilot tester name" : "Enter your name"}
+                placeholder="Enter your name"
                 className="h-12 text-base"
                 maxLength={120}
                 required

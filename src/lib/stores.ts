@@ -5,14 +5,6 @@ export interface StoreEntry {
   label: string;
 }
 
-const PILOTS: StoreEntry[] = [
-  { code: "P1", name: "Pilot 1", dsa: null, label: "Pilot 1 - Leader/Partner" },
-  { code: "P2", name: "Pilot 2", dsa: null, label: "Pilot 2 - Leader/Partner" },
-  { code: "P3", name: "Pilot 3", dsa: null, label: "Pilot 3 - Leader/Partner" },
-  { code: "P4", name: "Pilot 4", dsa: null, label: "Pilot 4 - Leader/Partner" },
-  { code: "P5", name: "Pilot 5", dsa: null, label: "Pilot 5 - Leader/Partner" },
-];
-
 const RAW: Array<[string, string, string | null]> = [
   ["1001", "Downtown", null],
   ["1002", "Northpark", "Lisa Woodruff"],
@@ -41,7 +33,6 @@ const RAW: Array<[string, string, string | null]> = [
 ];
 
 export const STORES: StoreEntry[] = [
-  ...PILOTS,
   ...RAW.map(([code, name, dsa]) => ({
     code,
     name,
