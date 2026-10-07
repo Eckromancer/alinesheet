@@ -133,7 +133,7 @@ export default function Login() {
           {selected && !selected.dsa && (
             <div className="space-y-2">
               <Label htmlFor="dsa" className="text-xs uppercase tracking-widest text-muted-foreground">
-                {selected.code.startsWith("P") ? "Pilot tester name" : "DSA name (unassigned store)"}
+                DSA name (unassigned store)
               </Label>
               <Input
                 id="dsa"
