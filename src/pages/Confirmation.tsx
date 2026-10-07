@@ -8,6 +8,7 @@ import { downloadFile, rowsForExport, toCSV, formatPrice } from "@/lib/exporting
 import { generateWorksheetPDF } from "@/lib/pdf";
 import { CheckCircle2, Download, Mail, Loader2, FileJson, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { seasonSlug } from "@/lib/seasons";
 
 const LEAD_EMAIL = "buying-team@company.com";
 
@@ -48,11 +49,13 @@ export default function Confirmation() {
   const exportCSV = () => {
     if (!session) return;
     const rows = rowsForExport(items, session.reviewer, session.store);
-    downloadFile(toCSV(rows), `review-${session.store.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0,10)}.csv`);
+    const season = items[0]?.product.season ?? "season";
+    downloadFile(toCSV(rows), `review-${seasonSlug(season)}-${session.store.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0,10)}.csv`);
   };
   const exportJSON = () => {
     if (!session) return;
     const payload = {
+      season: items[0]?.product.season ?? null,
       reviewer: session.reviewer,
       store: session.store,
       submitted_at: submittedAt,
@@ -61,7 +64,7 @@ export default function Confirmation() {
       items: rowsForExport(items, session.reviewer, session.store),
     };
     downloadFile(JSON.stringify(payload, null, 2),
-      `review-${session.store.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0,10)}.json`,
+      `review-${seasonSlug(items[0]?.product.season ?? "season")}-${session.store.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0,10)}.json`,
       "application/json");
   };
 

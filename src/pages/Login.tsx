@@ -53,7 +53,7 @@ export default function Login() {
             01
           </p>
           <h1 className="mt-4 font-display text-[40px] font-medium leading-[1.05] tracking-tight">
-            Akris PS27 <span className="display-italic">Cruise</span>
+            Akris <span className="display-italic">Summer 2027</span>
             <br />
             Colors / Bulk
           </h1>

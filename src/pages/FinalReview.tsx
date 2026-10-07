@@ -76,7 +76,7 @@ export default function FinalReview() {
     }
     setSubmitting(true);
     try {
-      await submitAll(session.reviewer, session.store);
+      await submitAll(session.reviewer, session.store, items.map(({ product }) => product.id));
       navigate("/confirmation");
     } catch (e: any) {
       toast.error(e.message ?? "Submission failed");

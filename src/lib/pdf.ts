@@ -46,6 +46,8 @@ export async function generateWorksheetPDF(
   doc.text(`DSA: ${reviewer}`, 40, 72);
   doc.text(`Generated: ${new Date().toLocaleString()}`, 40, 86);
   doc.text(`Items: ${items.length}`, 40, 100);
+  const season = items[0]?.product.season ?? "Season";
+  doc.text(`Season: ${season}`, 180, 58);
 
   // Pre-load images sequentially with progress
   const images: (Awaited<ReturnType<typeof loadImage>>)[] = [];
@@ -126,6 +128,6 @@ export async function generateWorksheetPDF(
     },
   });
 
-  const filename = `worksheet-${store.replace(/\s+/g, "_")}-${reviewer.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0, 10)}.pdf`;
+  const filename = `worksheet-${season.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}-${store.replace(/\s+/g, "_")}-${reviewer.replace(/\s+/g, "_")}-${new Date().toISOString().slice(0, 10)}.pdf`;
   doc.save(filename);
 }
