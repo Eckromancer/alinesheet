@@ -12,6 +12,8 @@ import ProductImage from "@/components/ProductImage";
 import { Link } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { sortSeasons } from "@/lib/seasons";
 import {
   HeroRatio,
   AssortmentMatrix,
@@ -445,6 +447,9 @@ function aggregate(products: Product[], rows: SyntheticReview[]): ProductAgg[] {
 export default function ManagerDashboard() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [seasons, setSeasons] = useState<string[]>([]);
+  const [selectedSeason, setSelectedSeason] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -453,14 +458,21 @@ export default function ManagerDashboard() {
         supabase.from("reviews").select("*"),
         supabase.from("products").select("*").order("sort_order"),
       ]);
+      const productRows = p ?? [];
+      const availableSeasons = sortSeasons(productRows.map((product) => product.season ?? ""));
+      const latestSeason = availableSeasons[0] ?? "";
       setReviews(r ?? []);
-      setProducts(p ?? []);
+      setAllProducts(productRows);
+      setSeasons(availableSeasons);
+      setSelectedSeason(latestSeason);
+      setProducts(productRows.filter((product) => product.season === latestSeason));
       setLoading(false);
     })();
   }, []);
 
   const { rows, useMock } = useMemo(() => {
-    const real = reviews.map(fromReal).filter(Boolean) as SyntheticReview[];
+    const activeProductIds = new Set(products.map((product) => product.id));
+    const real = reviews.filter((review) => activeProductIds.has(review.product_id)).map(fromReal).filter(Boolean) as SyntheticReview[];
     const distinctStores = new Set(real.map((r) => r.store)).size;
     if (distinctStores >= 5 || products.length === 0) return { rows: real, useMock: false };
     const realStores = new Set(real.map((r) => r.store));
@@ -605,7 +617,7 @@ export default function ManagerDashboard() {
         <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4">
           <div className="max-w-3xl">
             <p className="text-[10px] uppercase tracking-[0.32em] text-muted-foreground bracket-num">
-              Season — Buyer Intelligence
+              {selectedSeason || "Season"} — Buyer Intelligence
             </p>
             <h1 className="mt-4 font-display text-[64px] font-normal leading-[0.92] tracking-tight sm:text-[88px]">
               The <span className="display-italic">Buy.</span>
@@ -615,7 +627,21 @@ export default function ManagerDashboard() {
               locations. Weighted toward flagship signal and client-backed intent.
             </p>
           </div>
-          <div className="flex items-center gap-6 self-end">
+          <div className="flex flex-wrap items-center gap-6 self-end">
+            <Select
+              value={selectedSeason}
+              onValueChange={(season) => {
+                setSelectedSeason(season);
+                setProducts(allProducts.filter((product) => product.season === season));
+              }}
+            >
+              <SelectTrigger className="h-10 w-44 rounded-none border-foreground bg-background text-xs uppercase tracking-[0.16em]">
+                <SelectValue placeholder="Select season" />
+              </SelectTrigger>
+              <SelectContent>
+                {seasons.map((season) => <SelectItem key={season} value={season}>{season}</SelectItem>)}
+              </SelectContent>
+            </Select>
             {useMock && (
               <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-muted-foreground">
                 Demo data layered

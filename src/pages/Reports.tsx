@@ -6,6 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { downloadFile, toCSV } from "@/lib/exporting";
 import { toast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { seasonSlug, sortSeasons } from "@/lib/seasons";
 
 type Review = Tables<"reviews">;
 type Product = Tables<"products">;
@@ -13,6 +15,10 @@ type Product = Tables<"products">;
 export default function Reports() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [allReviews, setAllReviews] = useState<Review[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [seasons, setSeasons] = useState<string[]>([]);
+  const [selectedSeason, setSelectedSeason] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -20,8 +26,18 @@ export default function Reports() {
         supabase.from("reviews").select("*").eq("submission_status", "submitted"),
         supabase.from("products").select("*"),
       ]);
-      setReviews(r ?? []);
-      setProducts(p ?? []);
+      const reviewRows = r ?? [];
+      const productRows = p ?? [];
+      const availableSeasons = sortSeasons(productRows.map((product) => product.season ?? ""));
+      const latestSeason = availableSeasons[0] ?? "";
+      const activeProducts = productRows.filter((product) => product.season === latestSeason);
+      const activeIds = new Set(activeProducts.map((product) => product.id));
+      setAllReviews(reviewRows);
+      setAllProducts(productRows);
+      setSeasons(availableSeasons);
+      setSelectedSeason(latestSeason);
+      setProducts(activeProducts);
+      setReviews(reviewRows.filter((review) => activeIds.has(review.product_id)));
     })();
   }, []);
 
@@ -31,6 +47,7 @@ export default function Reports() {
       const p = pmap.get(r.product_id);
       return {
         store: r.store,
+        season: selectedSeason,
         reviewer: r.reviewer,
         style_number: p?.style_number ?? "",
         description: p?.long_style_desc ?? "",
@@ -45,7 +62,7 @@ export default function Reports() {
         submitted_at: r.submitted_at ?? "",
       };
     });
-    downloadFile(toCSV(rows), `buyer-submissions-${new Date().toISOString().slice(0, 10)}.csv`);
+    downloadFile(toCSV(rows), `buyer-submissions-${seasonSlug(selectedSeason)}-${new Date().toISOString().slice(0, 10)}.csv`);
     toast({ title: "Submissions export ready" });
   };
 
@@ -68,6 +85,7 @@ export default function Reports() {
         const a = agg.get(p.id) ?? { green: 0, yellow: 0, red: 0, units: 0, client: 0 };
         const score = a.green * 3 + a.yellow - a.red + a.units * 0.5 + a.client * 2;
         return {
+          season: selectedSeason,
           style_number: p.style_number,
           description: p.long_style_desc,
           color: p.color,
@@ -81,7 +99,7 @@ export default function Reports() {
         };
       })
       .sort((a, b) => b.buyer_priority_score - a.buyer_priority_score);
-    downloadFile(toCSV(rows), `buyer-priority-${new Date().toISOString().slice(0, 10)}.csv`);
+    downloadFile(toCSV(rows), `buyer-priority-${seasonSlug(selectedSeason)}-${new Date().toISOString().slice(0, 10)}.csv`);
     toast({ title: "Priority report ready" });
   };
 
@@ -114,6 +132,23 @@ export default function Reports() {
         <p className="mt-5 max-w-xl text-sm leading-relaxed text-muted-foreground">
           Buyer-ready exports drawn from live DSA submissions.
         </p>
+        <Select
+          value={selectedSeason}
+          onValueChange={(season) => {
+            const activeProducts = allProducts.filter((product) => product.season === season);
+            const activeIds = new Set(activeProducts.map((product) => product.id));
+            setSelectedSeason(season);
+            setProducts(activeProducts);
+            setReviews(allReviews.filter((review) => activeIds.has(review.product_id)));
+          }}
+        >
+          <SelectTrigger className="mt-6 h-10 w-48 rounded-none border-foreground bg-background text-xs uppercase tracking-[0.16em]">
+            <SelectValue placeholder="Select season" />
+          </SelectTrigger>
+          <SelectContent>
+            {seasons.map((season) => <SelectItem key={season} value={season}>{season}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </header>
 
       <section className="mt-12 grid gap-x-10 gap-y-12 md:grid-cols-2">
