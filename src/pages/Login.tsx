@@ -139,7 +139,7 @@ export default function Login() {
                 id="dsa"
                 value={dsaOverride}
                 onChange={(e) => setDsaOverride(e.target.value)}
-                placeholder={selected.code.startsWith("P") ? "Enter pilot tester name" : "Enter your name"}
+                placeholder="Enter your name"
                 className="h-12 text-base"
                 maxLength={120}
                 required
