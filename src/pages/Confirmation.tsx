@@ -10,7 +10,7 @@ import { CheckCircle2, Download, Mail, Loader2, FileJson, FileText } from "lucid
 import { toast } from "sonner";
 import { seasonSlug } from "@/lib/seasons";
 
-const LEAD_EMAIL = "buying-team@company.com";
+const LEAD_EMAIL = "elizabeth.eckland@saks.tech";
 
 export default function Confirmation() {
   const session = useSession();
