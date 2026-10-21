@@ -15,6 +15,13 @@
       "when": 1792617285048,
       "tag": "0001_grant_on_confirmed_email",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792617612147,
+      "tag": "0002_access_grants_require_activation",
+      "breakpoints": true
     }
   ]
 }
