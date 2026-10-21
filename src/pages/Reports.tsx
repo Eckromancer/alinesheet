@@ -8,7 +8,6 @@ import { downloadFile, toCSV } from "@/lib/exporting";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { seasonSlug, sortSeasons } from "@/lib/seasons";
-import { exportColorByItem, exportSizingMatrix } from "@/lib/nuorder";
 
 type Review = Tables<"reviews">;
 type Product = Tables<"products">;
@@ -104,16 +103,6 @@ export default function Reports() {
     toast({ title: "Priority report ready" });
   };
 
-  const stamp = () => `${seasonSlug(selectedSeason)}-${new Date().toISOString().slice(0, 10)}`;
-  const runXlsx = async (fn: typeof exportColorByItem, name: string, title: string) => {
-    try {
-      await fn(products, reviews, selectedSeason, `${name}-${stamp()}.xlsx`);
-      toast({ title });
-    } catch (e) {
-      toast({ title: "Export failed", description: String(e), variant: "destructive" });
-    }
-  };
-
   const cards = [
     {
       eyebrow: "01",
@@ -121,7 +110,6 @@ export default function Reports() {
       blurb:
         "Every submitted line, by store and DSA, with sizes, units and client-backed notes.",
       cta: exportSubmissions,
-      label: "Download CSV",
     },
     {
       eyebrow: "02",
@@ -129,23 +117,6 @@ export default function Reports() {
       blurb:
         "One row per style with G/Y/R counts, requested units, client-backed flags and weighted Buyer Priority Score.",
       cta: exportPriority,
-      label: "Download CSV",
-    },
-    {
-      eyebrow: "03",
-      title: "Color by Item",
-      blurb:
-        "Color section headers with styles nested underneath and units by door — matches the color docs and Nuorder layout.",
-      cta: () => runXlsx(exportColorByItem, "color-by-item", "Color by Item export ready"),
-      label: "Download Excel",
-    },
-    {
-      eyebrow: "04",
-      title: "Nuorder Sizing Matrix",
-      blurb:
-        "Per style-color: sizes 2–16 down, door codes across, subtotals per style and totals per door. Copies straight into Nuorder.",
-      cta: () => runXlsx(exportSizingMatrix, "nuorder-sizing", "Sizing matrix ready"),
-      label: "Download Excel",
     },
   ];
 
@@ -198,7 +169,7 @@ export default function Reports() {
               className="mt-5 rounded-none border-foreground text-[11px] uppercase tracking-[0.22em]"
               onClick={c.cta}
             >
-              <Download className="mr-2 h-3.5 w-3.5" /> {c.label}
+              <Download className="mr-2 h-3.5 w-3.5" /> Download CSV
             </Button>
           </div>
         ))}
