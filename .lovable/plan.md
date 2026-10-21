@@ -47,11 +47,13 @@ Audit only. No code, data, UI or settings were changed. The file checked is the 
 
 ## Separate security flag: client notes are publicly readable
 
-The `reviews` table is still readable by anyone with the app address. That includes `special_order_notes`, which holds client-backed notes and may name clients, plus DSA names. This was accepted as a pilot risk earlier. Putting these notes into exports makes it more sensitive. Fixing it properly needs real sign-in for buyers and DSAs, with reviews readable only by their owner and buyers. That's a separate task and isn't part of this export change.
+Confirmed in the database: anyone can read every review, and anyone can add new ones. Review edits are limited to drafts. Anyone with the app address can therefore read every DSA's decisions, units, notes and client-backed notes, which may name clients, along with DSA names and stores. This is a real privacy risk, and the email gate doesn't stop it. It was accepted as a pilot risk earlier. Putting these notes into exports raises the stakes. Fixing it properly needs real sign-in for buyers and DSAs, with each review readable only by the DSA who wrote it and by buyers. That's a separate task, not part of this export change. Until it's fixed, ask DSAs not to put client names in notes.
 
-## One question for Madison
+## Blocking questions for Madison
 
-"Should the sizing file leave every size cell blank for you to fill in, or may a single preferred size get all of that door's units?"
+1. "Should the sizing file leave every size cell blank for you to fill in, or may a single preferred size get all of that door's units?"
+2. "Can you send the NuORDER line list, in collection order, for Paris Summer 2027?"
+3. "Which store goes with each door code (8112-NP and so on)?"
 
 ## Technical notes (build phase, only when directed)
 
