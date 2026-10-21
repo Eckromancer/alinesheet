@@ -1,4 +1,3 @@
-// @vitest-environment node
 import { describe, it, expect } from "vitest";
 import { writeFileSync } from "fs";
 import { orderProducts, resolveLines, validate, allocationStatus, lineKey, TEMPLATE_DOORS, type Product, type Review } from "@/lib/nuorder/model";
