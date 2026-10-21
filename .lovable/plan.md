@@ -1,64 +1,54 @@
-# Audit: smallest export change that actually saves Madison time
+# Audit: sizing export vs. the real NY sizing worksheet
 
-Audit only. No code, data, UI or settings were changed.
+Audit only. No code, data, UI or settings were changed. The file checked is the uploaded `AKRIS-S27-NY-NM-SIZING_WORKSHEET.xlsx`. Only the Excel version is in uploads; I couldn't find a 5-page PDF, so the same template is assumed. It's used as a **format reference only**. Its 54 NY styles are never loaded as Paris products.
 
-## What the data actually holds (checked in source)
+## What the real template contains (checked)
 
-- For each style and store, a DSA saves: decision (green/yellow/red), **one total unit count (1–10)**, a **list of preferred sizes** (2–16, no quantity per size), notes and client notes.
-- **No quantity per size is stored anywhere.** "3 units, sizes 6/8" can't be split without guessing.
-- Product order in the app is `sort_order`, which is the **order of the imported Summer 2027 linesheet PDF**. Nothing in the app shows this is the official NuORDER collection order. It should be called "linesheet order", not "NuORDER order".
+- **Header row:** Image, Style #, Color, Class, Style Description, US MSRP, Sizes, Total Units, then 24 door columns I–AF (8112-NP … 8073-NME).
+- **Each style takes a 10-row block.** The top row holds style info, a typed **Total Units** and typed **requested units for each door**. Rows 2–9 are sizes 2–16. Row 10 is the sized subtotal for each door.
+- **Requested totals and sized subtotals are separate numbers.** In 276 of the door cells, the top-row request doesn't match that door's sized total. Of the 708 subtotal cells, many are typed values rather than `SUM` formulas. So the size split is a separate buying decision made after the request. It doesn't follow from the request.
+- **Class** uses values like SHIRT TOP, PANTS, DRESSES, KNIT, DENIM, JACKET, OUTERWEAR, SKIRT, GOWN. The Paris product records don't store class.
+- **Special client notes** sit in column AG, a 25th column past the doors, as short tags such as "AT Client" on the relevant size row.
 
-## What is built now (Reports > 03 NuORDER Exports)
+## Reassessment of the earlier proposal
 
-| Piece | Verdict |
+| Earlier claim | Holds? |
 |---|---|
-| Color-by-item workbook, one tab for each store, grouped by color | Keep the layout. Make it **one store at a time** |
-| "Official style sequence" paste box | **Hide.** It's setup work she didn't ask for, and she has no doc to paste from |
-| Duplicate-submission picker | Keep, but show it only when duplicates exist (it already does) |
-| Size-entry boxes for each line, kept only while the tab is open | **Remove from the main flow.** This is the same re-keying, just moved into the app, and it's lost when the tab closes |
-| Sizing worksheet (NY template layout, door columns, sums) | Keep the layout. Fill in only the numbers that already exist (see Option B2) |
+| Fill door totals from DSA units | **Yes.** This matches the top-row "requested" cells exactly |
+| Leave size rows blank | **Yes, and required.** The template proves the sizes are a separate decision |
+| Size subtotals as SUM formulas | Keep. They're safer than typed values, and the top-row request stays visible next to them for comparison |
+| Preferred-size hint as a cell comment | Change to **column AG text** (for example "pref 6/8"), which matches where Madison already looks |
+| Client notes | Put a short "Client" flag plus the DSA client note in AG, on the style's top row |
+| Class column | Leave **blank**. It isn't in the data and must not be guessed |
+| Store-to-door match | Fill only stores confirmed to match a door code. Leave other doors empty and list them on the Validation sheet |
 
-## Alternatives compared (one door, about 40 Summer 2027 styles)
+## Minimum update that saves re-keying
 
-**A. Current build**
-Steps for Madison: open Reports, (optionally paste a sequence), open each line and type quantities for each size, then export.
-Time saved: color view yes. Sizing: none. She types the same numbers, just in the app instead of NuORDER, and they're lost on refresh. **Net: likely slower.**
+1. **Sizing export, filled automatically, no editor:** style #, color, description, MSRP, requested units for each door (top row), Total Units, size labels 2–16, SUM formulas and AG notes. Size cells stay empty. Remove the in-app size editor from the screen.
+2. **Color by item:** pick one store and download a single sheet. Hide the sequence paste box.
+3. **Label the order** "linesheet order — not verified against NuORDER".
+4. No change to the DSA form, saved reviews, seasons or products.
 
-**B. Smallest pilot (recommended)**
-1. Color by item: Reports, pick store, **Download**. That's 2 clicks, with no setup and no sequence. The file has one sheet for that door: a color header with styles listed under it in linesheet order, showing decision, units, preferred sizes, notes and DSA. This replaces opening each store's worksheet and re-sorting it by color.
-2. Sizing: the same template, filled automatically with what truly exists: style #, color, description, MSRP, **total units for each door**, and the formulas. Size rows stay **blank**. Each door cell gets a short note with the DSA's preferred sizes (for example "pref 6/8"). No editor and no required entry.
-   Time saved: she stops building the header block, door totals and style rows by hand. She still decides the size split, which is a buying decision the app can't make.
+**Saved:** building the header and style blocks, typing every door's requested units, and copying client notes. **Not saved:** typing size quantities. That needs a real source of size splits.
 
-**C. Sizing filled from an existing workbook**
-If Madison already keeps a sizing workbook with real quantities for each size, the app could read it and output the exact template. But if that workbook exists, it **already is** the NuORDER paste source. Re-exporting it saves almost nothing. Reject unless she says otherwise.
+## Requires a true source (blocked, do not fake)
 
-## Can a sizing matrix be filled with zero re-keying?
+- **Quantities for each size:** these must come from Madison's own sizing decisions or a future DSA field. Even a single preferred size is not filled automatically unless Madison approves that rule.
+- **NuORDER collection order:** needs an official order list or an export from NuORDER. Until then, the linesheet order is used and labeled as such.
+- **Class for each style:** needs a source list from Akris or NuORDER.
+- **Door code mapping:** needs the buying office to confirm it.
 
-Only where the split follows directly from the data:
-- **Exact:** total = 0 or red, which means an empty column.
-- **Exact only if Madison agrees:** a single preferred size, so all units go to that size (for example 2 units with size 8 gives 2 in size 8). This is a rule she has to confirm. Without that, leave it blank.
-- **Never filled:** more than one preferred size. Show "pref 6/8 · 3u" as a note and leave the cell blank and highlighted.
+## Separate security flag: client notes are publicly readable
 
-Real quantities for every size would have to come from either the DSA (a DSA screen change, which is out of scope) or Madison's own sizing doc (Option C).
+The `reviews` table is still readable by anyone with the app address. That includes `special_order_notes`, which holds client-backed notes and may name clients, plus DSA names. This was accepted as a pilot risk earlier. Putting these notes into exports makes it more sensitive. Fixing it properly needs real sign-in for buyers and DSAs, with reviews readable only by their owner and buyers. That's a separate task and isn't part of this export change.
 
-## Recommendation
+## One question for Madison
 
-Run Option B for **one door** (for example 1019 Michigan Avenue, Summer 2027):
-- Add a store picker and a single "Color by Item" download for that door.
-- Sizing export fills the header and door totals automatically, leaves size rows blank, and adds preferred-size notes. The manual size editor is hidden.
-- Hide the sequence paste box. Label the order "linesheet order (not verified against NuORDER)".
-- No change to DSA screens, saved reviews, seasons or products.
+"Should the sizing file leave every size cell blank for you to fill in, or may a single preferred size get all of that door's units?"
 
-Madison's extra steps: pick store, click download. What it removes: re-sorting each door's worksheet by color, and building the sizing header and totals rows by hand.
+## Technical notes (build phase, only when directed)
 
-## The one question that matters
-
-"When a DSA picks a single size, may we put all of that door's units in that size? Or should every size split stay with you?"
-Her answer decides whether the sizing file pre-fills those cells or leaves them blank. Everything else can ship without waiting.
-
-## Technical notes (for build phase)
-
-- UI change only, in `src/components/reports/NuorderExports.tsx`: add a store `Select`. Remove the `Textarea` sequence input and the allocation editor from the render, keeping the pure functions in `src/lib/nuorder/model.ts`.
-- `buildColorByItemWorkbook`: add a `store` filter so the file has one sheet.
-- `buildSizingWorkbook`: fill door totals from `units(review)`, add cell comments with `selected_sizes`, and leave size cells empty unless the single-size rule is approved.
-- Update `src/test/nuorder.test.ts`: the one-store export includes only that store, and multi-size lines produce no per-size numbers.
+- `workbooks.ts` `buildSizingWorkbook`: top-row door cells = `units(review)` (0 for red); size cells empty; row 10 = SUM; column AG text = preferred sizes and client flag; drop `allocations` from the inputs.
+- `buildColorByItemWorkbook`: add a `store` filter.
+- `NuorderExports.tsx`: add a store Select; remove the sequence Textarea and the allocation editor from the screen.
+- Tests: one-store export contains only that store; no numbers appear in any size cell; door totals equal DSA units.
