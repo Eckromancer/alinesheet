@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792616633143,
+      "tag": "0000_staged_dsa_buyer_auth",
+      "breakpoints": true
+    }
+  ]
+}

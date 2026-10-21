@@ -1,6 +1,8 @@
 import { ReactNode, useEffect } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { isAdminUnlocked, lockAdmin } from "@/lib/admin";
+import { AUTH_REQUIRED } from "@/lib/auth";
+import { supabase } from "@/integrations/supabase/client";
 import { setLastTab } from "@/lib/last-tab";
 import { Button } from "@/components/ui/button";
 import { ClipboardList, LayoutDashboard, ShieldCheck, FileBarChart, LogOut, Home } from "lucide-react";
@@ -26,7 +28,7 @@ export default function ManagerLayout({ children }: Props) {
   const location = useLocation();
 
   useEffect(() => {
-    if (!isAdminUnlocked()) navigate("/portal", { replace: true });
+    if (!AUTH_REQUIRED && !isAdminUnlocked()) navigate("/portal", { replace: true });
   }, [navigate]);
 
   useEffect(() => {
@@ -50,7 +52,8 @@ export default function ManagerLayout({ children }: Props) {
               size="sm"
               onClick={() => {
                 lockAdmin();
-                navigate("/portal");
+                if (AUTH_REQUIRED) supabase.auth.signOut().then(() => navigate("/signin"));
+                else navigate("/portal");
               }}
             >
               <LogOut className="mr-1 h-4 w-4" />

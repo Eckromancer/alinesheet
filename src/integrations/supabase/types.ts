@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      access_grants: {
+        Row: {
+          created_at: string
+          email: string
+          reviewer: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          store: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          reviewer?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          store?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          reviewer?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          store?: string | null
+        }
+        Relationships: []
+      }
       access_log: {
         Row: {
           created_at: string
@@ -35,6 +59,24 @@ export type Database = {
           id?: string
           path?: string | null
           user_agent?: string | null
+        }
+        Relationships: []
+      }
+      dsa_identity: {
+        Row: {
+          reviewer: string
+          store: string
+          user_id: string
+        }
+        Insert: {
+          reviewer: string
+          store: string
+          user_id: string
+        }
+        Update: {
+          reviewer?: string
+          store?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -140,11 +182,40 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      can_access_review: {
+        Args: { _reviewer: string; _store: string }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       mark_review_processed: {
         Args: { _review_id: string; _value: boolean }
         Returns: {
@@ -173,6 +244,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_role: "buyer" | "dsa"
       decision_status: "green" | "yellow" | "red"
       submission_status: "draft" | "submitted"
     }
@@ -302,6 +374,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["buyer", "dsa"],
       decision_status: ["green", "yellow", "red"],
       submission_status: ["draft", "submitted"],
     },

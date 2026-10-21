@@ -15,6 +15,9 @@ import Governance from "./pages/Governance";
 import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 import EmailGate from "./components/EmailGate";
+import RequireRole from "./components/RequireRole";
+import SignIn from "./pages/SignIn";
+import ResetPassword from "./pages/ResetPassword";
 
 const queryClient = new QueryClient();
 
@@ -26,16 +29,18 @@ const App = () => (
       <BrowserRouter>
         <EmailGate>
           <Routes>
-            <Route path="/" element={<Login />} />
-            <Route path="/review" element={<Review />} />
-            <Route path="/final" element={<FinalReview />} />
-            <Route path="/confirmation" element={<Confirmation />} />
+            <Route path="/" element={<RequireRole role="dsa"><Login /></RequireRole>} />
+            <Route path="/review" element={<RequireRole role="dsa"><Review /></RequireRole>} />
+            <Route path="/final" element={<RequireRole role="dsa"><FinalReview /></RequireRole>} />
+            <Route path="/confirmation" element={<RequireRole role="dsa"><Confirmation /></RequireRole>} />
             <Route path="/portal" element={<Portal />} />
-            <Route path="/manager" element={<ManagerDashboard />} />
-            <Route path="/manager/home" element={<ManagerHome />} />
-            <Route path="/manager/submissions" element={<Manager />} />
-            <Route path="/manager/governance" element={<Governance />} />
-            <Route path="/manager/reports" element={<Reports />} />
+            <Route path="/manager" element={<RequireRole role="buyer"><ManagerDashboard /></RequireRole>} />
+            <Route path="/manager/home" element={<RequireRole role="buyer"><ManagerHome /></RequireRole>} />
+            <Route path="/manager/submissions" element={<RequireRole role="buyer"><Manager /></RequireRole>} />
+            <Route path="/manager/governance" element={<RequireRole role="buyer"><Governance /></RequireRole>} />
+            <Route path="/manager/reports" element={<RequireRole role="buyer"><Reports /></RequireRole>} />
+            <Route path="/signin" element={<SignIn />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </EmailGate>
