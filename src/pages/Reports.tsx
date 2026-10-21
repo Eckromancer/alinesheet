@@ -8,6 +8,7 @@ import { downloadFile, toCSV } from "@/lib/exporting";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { seasonSlug, sortSeasons } from "@/lib/seasons";
+import NuorderExports from "@/components/reports/NuorderExports";
 
 type Review = Tables<"reviews">;
 type Product = Tables<"products">;
@@ -174,6 +175,8 @@ export default function Reports() {
           </div>
         ))}
       </section>
+
+      <NuorderExports season={selectedSeason} products={products} reviews={reviews} />
     </ManagerLayout>
   );
 }
