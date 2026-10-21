@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       access_grants: {
         Row: {
+          active: boolean
           created_at: string
           email: string
           reviewer: string | null
@@ -23,6 +24,7 @@ export type Database = {
           store: string | null
         }
         Insert: {
+          active?: boolean
           created_at?: string
           email: string
           reviewer?: string | null
@@ -30,6 +32,7 @@ export type Database = {
           store?: string | null
         }
         Update: {
+          active?: boolean
           created_at?: string
           email?: string
           reviewer?: string | null
