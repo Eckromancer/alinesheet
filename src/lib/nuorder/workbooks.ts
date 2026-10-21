@@ -27,7 +27,10 @@ function addValidationSheet(wb: ExcelJS.Workbook, issues: Issue[], status: strin
 export async function buildSizingWorkbook(opts: {
   products: Product[]; lines: Line[]; allocations: Allocations; issues: Issue[];
   sequenceNote: string; images?: Map<string, ArrayBuffer>;
+  /** lineKeys with several submissions and no buyer choice — shown as ambiguous, never summed. */
+  unresolvedDuplicates?: string[];
 }) {
+  const dupes = new Set(opts.unresolvedDuplicates ?? []);
   const { products, lines, allocations, issues, images } = opts;
   const blocking = issues.filter((i) => i.severity === "blocking").length;
   const wb = new ExcelJS.Workbook();
@@ -41,6 +44,7 @@ export async function buildSizingWorkbook(opts: {
   const byKey = new Map(lines.map((l) => [lineKey(l.product.id, l.store), l]));
   const doorStore = new Map(Object.entries(STORE_TO_DOOR).map(([s, d]) => [d, s]));
   const missingFill: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF00" } };
+  const dupeFill: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF4B183" } };
 
   let r = 2;
   for (const p of products) {
@@ -57,7 +61,10 @@ export async function buildSizingWorkbook(opts: {
       const a = line ? allocations[lineKey(p.id, store!)] : undefined;
       const st = line ? allocationStatus(line, a) : null;
       const total = st ? (st.state === "accepted" ? st.sum : st.total) : 0;
-      if (total > 0) top.getCell(c).value = total;
+      const ambiguous = store ? dupes.has(lineKey(p.id, store)) : false;
+      // Submitted (incl. red or explicit 0) -> number; not reviewed -> blank; unresolved duplicate -> blank + orange.
+      if (line) top.getCell(c).value = total;
+      if (ambiguous) top.getCell(c).fill = dupeFill;
       SIZES.forEach((z, si) => {
         const cell = ws.getRow(r + 1 + si).getCell(c);
         const q = a?.sizes[z];
@@ -83,9 +90,11 @@ export async function buildSizingWorkbook(opts: {
 
   addValidationSheet(
     wb, issues,
-    blocking ? `DRAFT — NOT READY FOR NuORDER (${blocking} blocking issue${blocking > 1 ? "s" : ""}; yellow cells need size allocation)` : "Allocations complete — confirm with a NuORDER paste test before use",
+    blocking ? `DRAFT — SIZE SPLIT MISSING / NOT READY FOR NuORDER (${blocking} blocking issue${blocking > 1 ? "s" : ""}; yellow = size split needed, orange = duplicate submissions)` : "Size split complete — confirm with a NuORDER paste test before use",
     [
-      "Built from submitted DSA reviews only. Per-size quantities are buyer-entered; nothing was split or estimated.",
+      "Built from submitted DSA reviews only. Top row per style = requested units per door. DSA sizes are preferences, not quantities; size cells are blank unless a buyer entered them. Nothing was split or estimated.",
+      "Door cell legend: number = submitted (0 = red or explicit 0); blank = not reviewed; orange = duplicate submissions awaiting buyer choice.",
+      "Class (column D) is blank — not in the source data. DSA notes and client notes are not included in this file.",
       "Door columns follow the NY sizing worksheet header (format reference only). Store-to-door matching is by store name and needs buying-office confirmation.",
       opts.sequenceNote,
     ],
@@ -95,8 +104,13 @@ export async function buildSizingWorkbook(opts: {
 
 export async function buildColorByItemWorkbook(opts: {
   products: Product[]; lines: Line[]; issues: Issue[]; season: string; sequenceVerified: boolean; sequenceNote: string;
+  /** Limit to one door (one sheet). Omit for all doors. */
+  store?: string;
+  /** DSA notes + client notes are private; excluded unless explicitly requested. */
+  includeNotes?: boolean;
 }) {
-  const { products, lines, season } = opts;
+  const { products, season, includeNotes = false } = opts;
+  const lines = opts.store ? opts.lines.filter((l) => l.store === opts.store) : opts.lines;
   const wb = new ExcelJS.Workbook();
   const seq = new Map(products.map((p, i) => [p.id, i + 1]));
   const stores = [...new Set(lines.map((l) => l.store))].sort();
@@ -106,12 +120,15 @@ export async function buildColorByItemWorkbook(opts: {
     while (usedNames.has(name)) name = name.slice(0, 28) + "_" + usedNames.size;
     usedNames.add(name);
     const ws = wb.addWorksheet(name);
-    ws.columns = [8, 20, 18, 60, 11, 11, 12, 16, 40, 40, 20].map((width) => ({ width }));
+    const cols = includeNotes ? [8, 20, 18, 60, 11, 11, 12, 16, 40, 40, 20] : [8, 20, 18, 60, 11, 11, 12, 16, 20];
+    ws.columns = cols.map((width) => ({ width }));
     ws.addRow([`${store} — ${season} — Color by Item`]).font = { ...FONT, bold: true, size: 13 };
-    const n = ws.addRow([opts.sequenceVerified ? `Style order: ${opts.sequenceNote}` : `SEQUENCE UNVERIFIED — ${opts.sequenceNote}`]);
+    const n = ws.addRow([opts.sequenceVerified ? `Style order: ${opts.sequenceNote} (buyer-supplied reference — not verified by this app)` : `Linesheet order — not verified against NuORDER. ${opts.sequenceNote}`]);
     n.font = { ...FONT, italic: true, color: { argb: opts.sequenceVerified ? "FF555555" : "FFC00000" } };
     ws.addRow([]);
-    ws.addRow(["Seq", "Style #", "Color", "Description", "MSRP", "Decision", "Req. Units", "Preferred Sizes", "Notes", "Client-backed Notes", "DSA"]).font = { ...FONT, bold: true };
+    ws.addRow(includeNotes
+      ? ["Seq", "Style #", "Color", "Description", "MSRP", "Decision", "Req. Units", "Preferred Sizes", "Notes", "Client-backed Notes", "DSA"]
+      : ["Seq", "Style #", "Color", "Description", "MSRP", "Decision", "Req. Units", "Preferred Sizes", "DSA"]).font = { ...FONT, bold: true };
     const mine = lines.filter((l) => l.store === store).sort((a, b) => seq.get(a.product.id)! - seq.get(b.product.id)!);
     const colors: string[] = [];
     mine.forEach((l) => { if (!colors.includes(l.product.color)) colors.push(l.product.color); });
@@ -119,20 +136,22 @@ export async function buildColorByItemWorkbook(opts: {
       const h = ws.addRow([color.toUpperCase()]);
       h.font = { ...FONT, bold: true };
       h.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFEDEAE3" } };
-      ws.mergeCells(h.number, 1, h.number, 11);
+      ws.mergeCells(h.number, 1, h.number, cols.length);
       for (const l of mine.filter((m) => m.product.color === color)) {
         const p = l.product, rv = l.review;
         ws.addRow([
           seq.get(p.id), p.style_number, p.color, p.long_style_desc,
           p.retail_price == null ? "" : Number(p.retail_price),
           (rv.decision_status ?? "").toUpperCase(), units(rv), rv.selected_sizes.join(" "),
-          rv.notes ?? "", rv.special_order_notes ?? "", rv.reviewer,
+          ...(includeNotes ? [rv.notes ?? "", rv.special_order_notes ?? ""] : []), rv.reviewer,
         ]).font = FONT;
       }
     }
   }
   if (!stores.length) wb.addWorksheet("No submissions").addRow(["No submitted reviews for this season."]);
-  addValidationSheet(wb, opts.issues.filter((i) => i.kind === "Duplicate submission" || i.kind === "Missing MSRP"),
-    "Color by Item export", [opts.sequenceNote, "Red decisions show 0 requested units."]);
+  addValidationSheet(wb, opts.issues.filter((i) => i.kind === "Duplicate submission" || i.kind === "Missing MSRP")
+    .filter((i) => !opts.store || i.kind !== "Duplicate submission" || i.detail.startsWith(opts.store)),
+    "Color by Item export", [opts.sequenceNote, "Red decisions show 0 requested units. Preferred sizes are DSA preferences, not quantities.",
+      includeNotes ? "CONTAINS PRIVATE DSA AND CLIENT NOTES — do not forward." : "DSA notes and client notes excluded."]);
   return wb;
 }
