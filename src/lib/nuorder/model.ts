@@ -123,6 +123,7 @@ export function validate(products: Product[], lines: Line[], allocations: Alloca
   }
   issues.push({ kind: "Class not in source data", severity: "info", detail: "Column D (Class) is left blank — the 2027 assortment records carry no class field." });
   const usedDoors = new Set(Object.values(STORE_TO_DOOR));
+  issues.push({ kind: "Unverified door mapping", severity: "info", detail: "Store-to-door columns are matched by store name only and need buying-office confirmation." });
   for (const d of TEMPLATE_DOORS) if (!usedDoors.has(d)) issues.push({ kind: "Template door with no portal store", severity: "info", detail: `${d} — column kept, left empty.` });
   const unmapped = new Set<string>();
   for (const s of knownStores) if (!STORE_TO_DOOR[s]) unmapped.add(s);
@@ -134,7 +135,7 @@ export function validate(products: Product[], lines: Line[], allocations: Alloca
   for (const l of lines) {
     const st = allocationStatus(l, allocations[lineKey(l.product.id, l.store)]);
     const where = `${l.store} · ${l.product.style_number} ${l.product.color}`;
-    if (st.state === "missing") issues.push({ kind: "Size allocation missing", severity: "blocking", detail: `${where}: ${st.total} unit(s) requested, sizes preferred: ${l.review.selected_sizes.join("/") || "none"}.` });
+    if (st.state === "missing") issues.push({ kind: "Size split missing", severity: "blocking", detail: `${where}: ${st.total} unit(s) requested; DSA size preferences (not quantities): ${l.review.selected_sizes.join("/") || "none"}. Size cells left blank.` });
     if (st.state === "mismatch") issues.push({ kind: "Size total mismatch", severity: "blocking", detail: `${where}: allocated ${st.sum} vs requested ${st.total}.` });
     if (st.state === "accepted") issues.push({ kind: "Buyer-accepted total change", severity: "info", detail: `${where}: allocated ${st.sum} vs requested ${st.total}.` });
     if (units(l.review) > 0 && !l.review.selected_sizes.length) issues.push({ kind: "No size preference from DSA", severity: "info", detail: where });
