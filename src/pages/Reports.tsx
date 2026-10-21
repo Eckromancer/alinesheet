@@ -8,7 +8,6 @@ import { downloadFile, toCSV } from "@/lib/exporting";
 import { toast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { seasonSlug, sortSeasons } from "@/lib/seasons";
-import { buildColorByItemWorkbook, buildSizingWorkbook, downloadWorkbook } from "@/lib/nuorder/build";
 
 type Review = Tables<"reviews">;
 type Product = Tables<"products">;
@@ -104,17 +103,6 @@ export default function Reports() {
     toast({ title: "Priority report ready" });
   };
 
-  const exportNuorder = async (kind: "color" | "sizing") => {
-    const input = { season: selectedSeason, products, reviews };
-    const { workbook, issues } = kind === "color" ? buildColorByItemWorkbook(input) : buildSizingWorkbook(input);
-    const name = kind === "color" ? "color-by-item-by-door" : "nuorder-sizing-matrix";
-    await downloadWorkbook(workbook, `${name}-${seasonSlug(selectedSeason)}-${new Date().toISOString().slice(0, 10)}.xlsx`);
-    toast({
-      title: kind === "color" ? "Color by Item ready" : "Sizing matrix ready",
-      description: issues.length ? `${issues.length} items flagged — see the Validation tab before NuORDER.` : "No issues flagged.",
-    });
-  };
-
   const cards = [
     {
       eyebrow: "01",
@@ -129,18 +117,6 @@ export default function Reports() {
       blurb:
         "One row per style with G/Y/R counts, requested units, client-backed flags and weighted Buyer Priority Score.",
       cta: exportPriority,
-    },
-    {
-      eyebrow: "03",
-      title: "Color by Item — by Door",
-      blurb: "One tab per door. Color banners with styles in NuORDER sequence; unmatched styles flagged.",
-      cta: () => exportNuorder("color"),
-    },
-    {
-      eyebrow: "04",
-      title: "NuORDER Sizing Matrix",
-      blurb: "Madison's sizing workbook layout (A–AF). Sizes fill only from buyer-confirmed allocations; gaps listed on the Validation tab.",
-      cta: () => exportNuorder("sizing"),
     },
   ];
 
@@ -193,7 +169,7 @@ export default function Reports() {
               className="mt-5 rounded-none border-foreground text-[11px] uppercase tracking-[0.22em]"
               onClick={c.cta}
             >
-              <Download className="mr-2 h-3.5 w-3.5" /> Download {Number(c.eyebrow) > 2 ? "Excel" : "CSV"}
+              <Download className="mr-2 h-3.5 w-3.5" /> Download CSV
             </Button>
           </div>
         ))}
