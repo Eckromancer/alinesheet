@@ -118,6 +118,7 @@ export function buildSizingWorkbook(input: ExportInput) {
     header.getCell(4).value = t.className;
     header.getCell(5).value = t.description;
     header.getCell(6).value = t.msrp;
+    ["B", "C", "D", "E", "F"].forEach((L) => ws.mergeCells(`${L}${top}:${L}${top + 2}`)); // as in source
     let total = 0;
     DOOR_COLUMNS.forEach((d, i) => {
       if (!p || !d.app) return;

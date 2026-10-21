@@ -35,6 +35,7 @@ describe("NuORDER sizing matrix", () => {
       if (sf) expect((e.getCell(r, 8).value as any)?.formula).toBe(sf);
     }
     expect(e.rowCount).toBe(541);
+    expect(Object.keys((e as any)._merges).sort()).toEqual(Object.keys((s as any)._merges).sort());
   });
 
   it("never spreads requested units across selected sizes", async () => {
