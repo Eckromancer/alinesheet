@@ -2,6 +2,13 @@
 
 Audit only. No code, data, UI or settings were changed. The file checked is the uploaded `AKRIS-S27-NY-NM-SIZING_WORKSHEET.xlsx`. Only the Excel version is in uploads; I couldn't find a 5-page PDF, so the same template is assumed. It's used as a **format reference only**. Its 54 NY styles are never loaded as Paris products.
 
+## Do the two new files change the recommendation? No.
+
+- **Paris color worksheet (the 41 Excel rows):** this matches the 41 Summer 2027 products already in the app. It's the blank form DSAs fill in. It has one "Requested Bulk Units" box and a notes box for each style, and **no size columns**. The DSA form follows the same design: one total plus a list of preferred sizes. So **the Paris file can't supply size quantities**, because they were never part of it. It also doesn't prove the NuORDER order; its row order is just the linesheet order.
+- **NY sizing worksheet:** this is a layout to copy, not product data, as covered below.
+- **Smallest practical source for exact sizes:** Madison's own size split, typed directly into the exported sizing file. Today she types sizes into NuORDER; with this export she types only the sizes, and the header, totals and notes are already filled in. Any automatic source would need either (a) a size-quantity field on the DSA form, which changes the DSA workflow and isn't recommended now, or (b) a sizing file Madison already keeps, which, if it exists, is already her NuORDER paste source.
+- **NuORDER sequence:** Madison needs to send a NuORDER line-list export, or a style list in NuORDER order, just once for the season.
+
 ## What the real template contains (checked)
 
 - **Header row:** Image, Style #, Color, Class, Style Description, US MSRP, Sizes, Total Units, then 24 door columns I–AF (8112-NP … 8073-NME).
