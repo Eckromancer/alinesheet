@@ -9,7 +9,9 @@ import {
   SIZES, lineKey, orderProducts, resolveLines, validate, allocationStatus, units,
   type Allocations, type DuplicateChoices, type Product, type Review,
 } from "@/lib/nuorder/model";
-import { buildColorByItemWorkbook, buildSizingWorkbook } from "@/lib/nuorder/workbooks";
+import { buildColorByItemWorkbook, buildSizingWorkbook, buildDoorSizingWorkbook } from "@/lib/nuorder/workbooks";
+import { STORE_TO_DOOR } from "@/lib/nuorder/model";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props { season: string; products: Product[]; reviews: Review[] }
 interface Ready { url: string; name: string; label: string }
@@ -49,7 +51,30 @@ export default function NuorderExports({ season, products, reviews }: Props) {
     [dupIssues, seq.ordered, lines, allocations],
   );
   const blocking = issues.filter((i) => i.severity === "blocking");
-  const toAllocate = lines.filter((l) => units(l.review) > 0);
+  const doorCode = door === "__all" ? undefined : STORE_TO_DOOR[door];
+  const toAllocate = lines.filter((l) => units(l.review) > 0 && (door === "__all" || l.store === door));
+
+  // Signed-in buyers: approved bulk + sizes are saved to the backend (buyer-only). Otherwise kept in this tab.
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    const ids = products.map((p) => p.id);
+    if (!ids.length) return;
+    supabase.from("buyer_allocations").select("product_id,store,approved_units,sizes").in("product_id", ids).then(({ data, error }) => {
+      if (error || !data) return;
+      setSaved(true);
+      if (!data.length) return;
+      const next = { ...allocations };
+      for (const row of data) next[lineKey(row.product_id, row.store)] = { sizes: (row.sizes ?? {}) as Allocations[string]["sizes"], approved: row.approved_units };
+      setAllocations(next);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]);
+  const persistAlloc = (key: string, entry: Allocations[string]) => {
+    setAllocations({ ...allocations, [key]: entry });
+    const [product_id, ...rest] = key.split("|");
+    supabase.from("buyer_allocations").upsert({ product_id, store: rest.join("|"), season, approved_units: entry.approved ?? null, sizes: entry.sizes })
+      .then(({ error }) => setSaved(!error));
+  };
 
   useEffect(() => () => ready.forEach((r) => URL.revokeObjectURL(r.url)), [ready]);
 
@@ -66,6 +91,14 @@ export default function NuorderExports({ season, products, reviews }: Props) {
           if (!p.image_url) return;
           try { const res = await fetch(p.image_url); if (res.ok) images.set(p.id, await res.arrayBuffer()); } catch { /* image optional */ }
         }));
+        if (doorCode) {
+          const out = await buildDoorSizingWorkbook({ products: seq.ordered, lines, allocations, store: door, door: doorCode, sequenceNote, images });
+          const buf = await out.wb.xlsx.writeBuffer();
+          const url = URL.createObjectURL(new Blob([buf], { type: XLSX_MIME }));
+          const name = `${out.blocking ? "DRAFT-" : ""}sizing-${doorCode}-${slug}-${date}.xlsx`;
+          setReady((prev) => [...prev.filter((r) => !r.name.includes("sizing")), { url, name, label: `Sizing ${doorCode}${out.blocking ? " (DRAFT)" : ""}` }]);
+          return;
+        }
         wb = await buildSizingWorkbook({ products: seq.ordered, lines, allocations, issues, sequenceNote, images, unresolvedDuplicates: duplicates.filter((d) => !d.reviews.some((r) => r.id === choices[d.key])).map((d) => d.key) });
       }
       const buf = await wb.xlsx.writeBuffer();
@@ -80,7 +113,11 @@ export default function NuorderExports({ season, products, reviews }: Props) {
   const setSize = (key: string, z: number, v: string) => {
     const n = v === "" ? undefined : Math.max(0, Math.floor(Number(v)) || 0);
     const cur = allocations[key] ?? { sizes: {} };
-    setAllocations({ ...allocations, [key]: { ...cur, sizes: { ...cur.sizes, [z]: n } } });
+    persistAlloc(key, { ...cur, sizes: { ...cur.sizes, [z]: n } });
+  };
+  const setApproved = (key: string, v: string) => {
+    const cur = allocations[key] ?? { sizes: {} };
+    persistAlloc(key, { ...cur, approved: v === "" ? null : Math.max(0, Math.floor(Number(v)) || 0) });
   };
 
   const box = "border-t border-foreground pt-5";
@@ -112,7 +149,7 @@ export default function NuorderExports({ season, products, reviews }: Props) {
             Prepare Color by Item
           </Button>
           <Button size="sm" variant="outline" disabled={busy} className="rounded-none border-foreground text-[11px] uppercase tracking-[0.22em]" onClick={() => prepare("sizing")}>
-            Prepare Sizing Worksheet{blocking.length ? " (Draft)" : ""}
+            {doorCode ? `Prepare Sizing ${doorCode}` : `Prepare Sizing Worksheet${blocking.length ? " (Draft)" : ""}`}
           </Button>
           {ready.map((r) => (
             <Button key={r.name} asChild size="sm" className="rounded-none text-[11px] uppercase tracking-[0.22em]">
@@ -163,7 +200,7 @@ export default function NuorderExports({ season, products, reviews }: Props) {
 
       <details className={box}>
         <summary className={`${eyebrow} cursor-pointer`}>Advanced — optional size entry fallback ({toAllocate.filter((l) => ["ok", "accepted"].includes(allocationStatus(l, allocations[lineKey(l.product.id, l.store)]).state)).length}/{toAllocate.length} confirmed)</summary>
-        <p className="mt-2 max-w-2xl text-xs text-muted-foreground">Not required. Only use if you'd rather enter a size split here than in NuORDER. Kept in this browser tab only.</p>
+        <p className="mt-2 max-w-2xl text-xs text-muted-foreground">Optional. Approved bulk is your number, separate from the DSA request; blank = not allocated. Sizes must add up to approved bulk. {saved ? "Saved to your buyer account." : "Kept in this browser tab only (sign in as a buyer to save)."} Pick a door above to see just that door.</p>
         <div className="mt-4 divide-y divide-[hsl(var(--hairline))] border-y border-[hsl(var(--hairline))]">
           {toAllocate.length === 0 && <p className="py-3 text-xs text-muted-foreground">No submitted lines with units for this season.</p>}
           {toAllocate.map((l) => {
@@ -181,6 +218,12 @@ export default function NuorderExports({ season, products, reviews }: Props) {
                 {open && (
                   <div className="mt-3 space-y-2">
                     <p className="text-muted-foreground">DSA {l.review.reviewer}: {st.total} unit(s), preferred sizes {l.review.selected_sizes.join(", ") || "none"}{l.review.notes ? ` · “${l.review.notes}”` : ""}</p>
+                    <label className="flex items-center gap-2">
+                      Approved bulk
+                      <input type="number" min={0} inputMode="numeric" aria-label="Approved bulk" value={a?.approved ?? ""} onChange={(e) => setApproved(key, e.target.value)}
+                        className="h-8 w-14 border border-[hsl(var(--hairline))] bg-background text-center" />
+                      <span className="text-muted-foreground">(DSA requested {units(l.review)})</span>
+                    </label>
                     <div className="flex flex-wrap gap-2">
                       {SIZES.map((z) => (
                         <label key={z} className={`flex flex-col items-center gap-1 ${l.review.selected_sizes.includes(z) ? "font-semibold" : "text-muted-foreground"}`}>
@@ -192,7 +235,7 @@ export default function NuorderExports({ season, products, reviews }: Props) {
                     </div>
                     {st.sum > 0 && st.sum !== st.total && (
                       <label className="flex items-center gap-2">
-                        <input type="checkbox" checked={!!a?.acceptMismatch} onChange={(e) => setAllocations({ ...allocations, [key]: { ...(a ?? { sizes: {} }), acceptMismatch: e.target.checked } })} />
+                        <input type="checkbox" checked={!!a?.acceptMismatch} onChange={(e) => persistAlloc(key, { ...(a ?? { sizes: {} }), acceptMismatch: e.target.checked })} />
                         Buyer approves {st.sum} units instead of the DSA's {st.total}
                       </label>
                     )}
