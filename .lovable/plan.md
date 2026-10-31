@@ -1,31 +1,46 @@
-# Audit: what the NY sizing worksheet is for (no changes)
+# Audit: 3 critical improvements (buyer bulk view, allocation-constrained sizing, order fidelity)
 
-## Answer
-The NY sizing worksheet is a **format template for the buyer's sizing export**. It is not a product or size-split source for the Paris Summer 2027 review now in the app. It does hold real NY numbers, but those numbers belong to a different set of styles and should not be imported.
+## What exists today (checked in code)
+- DSA saves one requested total (`requested_bulk_units`, 1–10, red = 0), preferred sizes, notes, client notes. No per-size quantities anywhere.
+- No buyer-approved allocation is stored. The only buyer numbers are the optional size boxes in Reports, kept in the browser tab (`sessionStorage`) and lost when it closes.
+- The sizing export puts the DSA's request in each door's top cell and checks sizes against that request (`allocationStatus` compares to `units(review)`). So "requested" and "approved bulk" are treated as the same number. Madison's rule is different: only the designated bulk at the top (blue) gets sized; no number means not allocated.
+- Color by item: one-door download exists. Style order = linesheet import order, labelled unverified. The optional order paste box only accepts style + color text; nothing is verified against NuORDER.
+- Security: reviews still publicly readable and insertable; `AUTH_REQUIRED` is off; the DSA notes box invites client names ("Hold 1 size 6 for Ms. Walker").
+- Item Enablement Overview is a BG/Saks document and is not used as proof of NM process.
 
-## Facts: what the NY file contains
-- Real NY Summer 2027 data: about 70 style/colors, each with class, door totals and a size split for 24 doors (columns I–AF).
-- The size split is a separate buying decision. In 276 door cells, the sized total does not match the units requested in the top row. Many subtotals are typed numbers, not formulas.
-- Notes for special client orders are in column AG.
+## Improvement 1 — Buyer bulk column, separate from DSA request (highest value)
+Buyer sees one door at a time (color-by-item order) with DSA request beside an editable "Approved bulk" number. Blank = not allocated. The sizing export's blue top row uses approved bulk only; the request moves to a reference note.
+- New table `buyer_allocations(product_id, store, season, approved_units, sizes jsonb, updated_by, updated_at)`, buyer-only RLS via `has_role`. Reviews are not touched; DSA screens unchanged.
+- `src/lib/nuorder/model.ts`: add `approvedUnits(line, alloc)`; `allocationStatus` compares size sum to approved bulk, not request; blank approved = "not allocated", no issue raised.
+- `src/components/reports/NuorderExports.tsx`: replace the tab-only size boxes with a per-door list (door picker reused) saving to the table; prefill nothing.
+- `src/lib/nuorder/workbooks.ts`: top door cell = approved units with blue fill; blank when not allocated; request shown in the Validation sheet / column AG note only.
 
-## Evidence that it is only a template for the Paris review
-1. **Different set of styles.** The Paris color worksheet has 41 rows, and they match the 41 Summer 2027 products in the app one for one. The NY styles are a different NY collection.
-2. **What Madison asked for.** She wants a sized worksheet she can copy into NuORDER/GCC, so she does not have to re-key numbers. She is describing the layout of the file she wants back, not sending data to load.
-3. **What each file does.** The Paris file is the DSA's input form (one units box and notes per style, no size columns). The NY file is the buyer's finished output. They come from opposite ends of the process.
-4. **NY numbers would be wrong for Paris.** NY door totals and size splits come from NY's own decisions. Putting them on Paris styles would invent quantities, which breaks the rule that size splits are never made up.
-5. **Past direction.** Earlier instructions said the NY file is a layout reference only and must never be used as the Paris product master. The export follows this: it copies the 32-column NY layout and loads no NY styles.
+## Improvement 2 — Sizing limited to allocated bulk, never inferred
+- Size cells are only enterable when approved bulk > 0; the export marks "sized" only when sizes sum to approved bulk. DRAFT label stays until every allocated line is sized. Unallocated doors produce no warnings.
+- Same files as above; no auto-split from preferred sizes.
 
-## What the NY file is still useful for (without importing it)
-- Column layout, the size rows (2–16) and how the subtotal formulas are built.
-- The class names (SHIRT TOP, PANTS, DRESSES and so on) and the door-code columns. Both are good hints but are not confirmed for Paris.
-- An example of what a finished size split looks like.
+## Improvement 3 — Order fidelity from Madison's own source
+- Accept an uploaded NuORDER/worksheet export (XLSX/CSV, style + color columns) in the existing Advanced box instead of free text; match exactly on style # + color; show unmatched rows. Only labelled "buyer-supplied order", never "NuORDER verified".
+- `orderProducts` unchanged in logic; add a small parser in `src/lib/nuorder/sequence.ts`. Color headings keep first-appearance order from that sequence.
 
-## What is still unclear
-- **Door codes:** NY door columns may or may not match the Paris door list. Two Paris stores (1020 Boston, 1001 Downtown) have no NY column.
-- **Class for Paris:** No class list exists for the Paris styles. The NY class names show the format but say nothing about Paris products.
-- **Overlapping styles:** If any style number appears in both collections, NY's class could be borrowed for it, but only with Madison's say-so. NY sizes should never be borrowed.
-- **Where Paris sizes come from:** Still not decided. The options are Madison deciding the split, a future size field for DSAs, or an export from NuORDER/GCC.
-- **NuORDER order:** Neither file proves the NuORDER style order.
+## DSA side
+No changes to steps or taps. Only change: notes placeholder text no longer suggests client names (copy only, optional, flagged for your call).
 
-## Question for Madison
-Is the NY sizing worksheet just the format you want the Paris export to follow? And do the Paris doors use the same 24 door columns, or a different list?
+## Acceptance tests (`src/test/nuorder.test.ts`)
+1. Request 4, approved blank → top cell blank, no "size split missing" issue.
+2. Request 4, approved 2, sizes 6:1 8:1 → status ok; top cell 2 with blue fill; request 4 only in notes.
+3. Approved 2, sizes sum 3 → mismatch, file stays DRAFT.
+4. Red review → request 0, approved stays blank unless buyer types a number.
+5. No size cell ever filled from `selected_sizes`.
+6. Uploaded order with 41 rows → products follow it exactly; one bad row listed as unmatched and label says "buyer-supplied".
+7. RLS: signed-out and DSA cannot read/write `buyer_allocations`; buyer can.
+8. Existing DSA save/submit regression still passes.
+
+## Security before sharing with Madison (blocker)
+Reviews and client notes are still public. Do not share the live portal until buyer sign-in is confirmed and the lockdown step runs. New allocation table must ship buyer-only from day one. Given tomorrow's deadline, the safe path for this week is downloaded files, not live access.
+
+## Out of scope
+PO manager, Freshservice, new dashboards, any claim of NuORDER compatibility.
+
+## Open question
+Is "approved bulk" set by Madison per door per style (assumed), or does it come from another file she already has?
