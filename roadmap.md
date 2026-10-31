@@ -11,3 +11,5 @@
 - [ ] Share live buyer portal — BLOCKED: reviews still publicly readable; needs full lockdown (DSA accounts)
 - [ ] DSA onboarding + lockdown — BLOCKED on Madison sign-off
 - [ ] Madison: NuORDER order list, door-code confirmation, one GCC/NuORDER paste test
+- [x] Paris single-door sizing (A:H, approved bulk in H), approved vs requested stored buyer-only, color view keeps linesheet order
+- [ ] Match Paris sheet exactly — BLOCKED: Paris sizing file not in uploads; re-attach

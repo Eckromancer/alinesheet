@@ -65,6 +65,44 @@ export type Database = {
         }
         Relationships: []
       }
+      buyer_allocations: {
+        Row: {
+          approved_units: number | null
+          product_id: string
+          season: string | null
+          sizes: Json
+          store: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          approved_units?: number | null
+          product_id: string
+          season?: string | null
+          sizes?: Json
+          store: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          approved_units?: number | null
+          product_id?: string
+          season?: string | null
+          sizes?: Json
+          store?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_allocations_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dsa_identity: {
         Row: {
           reviewer: string

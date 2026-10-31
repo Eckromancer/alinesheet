@@ -43,7 +43,8 @@ export const STORE_TO_DOOR: Record<string, string> = {
 };
 
 export type Allocation = Partial<Record<(typeof SIZES)[number], number>>;
-export interface AllocationEntry { sizes: Allocation; acceptMismatch?: boolean }
+/** approved = buyer-approved bulk for the door (separate from the DSA request). null/undefined = not allocated. */
+export interface AllocationEntry { sizes: Allocation; acceptMismatch?: boolean; approved?: number | null }
 /** key = `${productId}|${store}` */
 export type Allocations = Record<string, AllocationEntry>;
 /** key = `${productId}|${store}` -> chosen review id */
@@ -108,7 +109,7 @@ export function resolveLines(products: Product[], reviews: Review[], choices: Du
 export const units = (r: Review) => (r.decision_status === "red" ? 0 : r.requested_bulk_units ?? 0);
 
 export function allocationStatus(line: Line, a: AllocationEntry | undefined) {
-  const total = units(line.review);
+  const total = a?.approved != null ? a.approved : units(line.review);
   const sum = SIZES.reduce((s, z) => s + (a?.sizes[z] ?? 0), 0);
   if (total === 0 && sum === 0) return { total, sum, state: "none" as const };
   if (sum === 0) return { total, sum, state: "missing" as const };
@@ -141,4 +142,13 @@ export function validate(products: Product[], lines: Line[], allocations: Alloca
     if (units(l.review) > 0 && !l.review.selected_sizes.length) issues.push({ kind: "No size preference from DSA", severity: "info", detail: where });
   }
   return issues;
+}
+
+/** Buyer-approved bulk only (Paris single-door sheet). Blank approved = not allocated, never an issue. */
+export function approvedStatus(a: AllocationEntry | undefined) {
+  const approved = a?.approved ?? null;
+  const sum = SIZES.reduce((s, z) => s + (a?.sizes[z] ?? 0), 0);
+  if (approved == null || approved === 0) return { approved, sum, state: sum ? ("mismatch" as const) : ("unallocated" as const) };
+  if (sum === 0) return { approved, sum, state: "missing" as const };
+  return { approved, sum, state: sum === approved ? ("ok" as const) : ("mismatch" as const) };
 }
