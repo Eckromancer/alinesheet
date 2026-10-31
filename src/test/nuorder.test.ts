@@ -148,8 +148,20 @@ describe("NuORDER exports", () => {
     const ws = a.wb.getWorksheet("Sheet 1")!;
     for (let r = 2; r <= 10; r++) expect(ws.getRow(r).getCell(8).value).toBeNull();
     expect(a.blocking).toBe(0);
+    const v: string[] = []; a.wb.getWorksheet("Validation")!.eachRow((r) => v.push(String(r.getCell(2).value)));
+    expect(v).toContain("Requested, not allocated");
+    expect(v.some((s) => s.startsWith("Subtotal mode: formula"))).toBe(true);
     const b = await doorSheet({ [lineKey("j", MA)]: { approved: 2, sizes: { 4: 2, 6: 1 } } });
     expect(b.blocking).toBe(1);
+  });
+
+  it("paris door sheet: sizes in G3:G10 and next style starts at row 12", async () => {
+    const K = prod("k", "2", "black", 2, 100);
+    const lines = resolveLines([J, K], [], {}).lines;
+    const { wb } = await buildDoorSizingWorkbook({ products: [J, K], lines, allocations: {}, store: MA, door: "8219-MA", sequenceNote: "x" });
+    const ws = wb.getWorksheet("Sheet 1")!;
+    expect([3, 4, 5, 6, 7, 8, 9, 10].map((r) => ws.getRow(r).getCell(7).value)).toEqual([2, 4, 6, 8, 10, 12, 14, 16]);
+    expect(ws.getRow(12).getCell(2).value).toBe("2");
   });
 
   it("color by item keeps linesheet order: red, black, red stays three headings", async () => {

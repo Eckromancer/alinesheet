@@ -217,6 +217,7 @@ export async function buildDoorSizingWorkbook(opts: {
     [
       `Door ${door} (${store}). Blue top number = buyer-approved bulk; blank = not allocated. DSA requested units are listed here only, never in column H.`,
       "Sizes are buyer-entered only; DSA size picks are preferences and were not used. Class (D) blank — not in source data. Notes not included.",
+      "Subtotal mode: formula. Bottom row of each style is =SUM of its size rows (an improvement; the source Paris file's subtotal may be typed — unconfirmed).",
       opts.sequenceNote,
     ]);
   return { wb, blocking };
