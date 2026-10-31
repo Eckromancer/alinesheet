@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { writeFileSync } from "fs";
 import ExcelJS from "exceljs";
 import { orderProducts, resolveLines, validate, allocationStatus, lineKey, TEMPLATE_DOORS, type Product, type Review } from "@/lib/nuorder/model";
-import { buildSizingWorkbook, buildColorByItemWorkbook } from "@/lib/nuorder/workbooks";
+import { buildSizingWorkbook, buildColorByItemWorkbook, buildDoorSizingWorkbook } from "@/lib/nuorder/workbooks";
 
 const prod = (id: string, style: string, color: string, sort: number, price: number | null = 1000): Product =>
   ({ id, style_number: style, color, sort_order: sort, long_style_desc: `desc ${id}`, retail_price: price, image_url: null, season: "Summer 2027", created_at: "" });
@@ -120,5 +120,44 @@ describe("NuORDER exports", () => {
     expect(txt).not.toContain("CLIENTNAME"); expect(txt).not.toContain("PRIVATE-DSA-NOTE");
     expect(txt).toContain("DRAFT — SIZE SPLIT MISSING");
     writeFileSync("/tmp/fixture-sizing-blank.xlsx", Buffer.from(await wb.xlsx.writeBuffer()));
+  });
+
+  const J = prod("j", "7701605200013269", "red", 1, 4690);
+  const MA = "1019 Michigan Avenue";
+  const doorSheet = async (alloc: Record<string, { sizes: Record<number, number>; approved?: number | null }>, req = 4) => {
+    const lines = resolveLines([J], [rev("rj", "j", MA, "Liz", req, [8])], {}).lines;
+    return buildDoorSizingWorkbook({ products: [J], lines, allocations: alloc, store: MA, door: "8219-MA", sequenceNote: "x" });
+  };
+
+  it("paris door sheet: A:H header, approved bulk in H (blue), buyer sizes, SUM row; request never in H", async () => {
+    const { wb, blocking } = await doorSheet({ [lineKey("j", MA)]: { approved: 2, sizes: { 4: 1, 10: 1 } } });
+    const ws = wb.getWorksheet("Sheet 1")!;
+    expect((ws.getRow(1).values as unknown[]).slice(1)).toEqual(["Image", "Style #", "Color", "Class", "Style Description", "US MSRP", "Sizes", "8219-MA"]);
+    expect(ws.getRow(1).getCell(9).value).toBeNull();
+    expect(ws.getRow(2).getCell(8).value).toBe(2);
+    expect(ws.getRow(2).getCell(8).font?.color?.argb).toBe("FF0000FF");
+    const sizeVals = [3, 4, 5, 6, 7, 8, 9, 10].map((r) => ws.getRow(r).getCell(8).value);
+    expect(sizeVals).toEqual([null, 1, null, null, 1, null, null, null]);
+    expect(ws.getRow(11).getCell(8).value).toEqual({ formula: "SUM(H3:H10)" });
+    expect(blocking).toBe(0);
+    for (let r = 2; r <= 11; r++) expect(ws.getRow(r).getCell(8).value).not.toBe(4);
+  });
+
+  it("paris door sheet: blank approved = not allocated (no blocking), mismatch = DRAFT, preferred sizes never used", async () => {
+    const a = await doorSheet({}, 3);
+    const ws = a.wb.getWorksheet("Sheet 1")!;
+    for (let r = 2; r <= 10; r++) expect(ws.getRow(r).getCell(8).value).toBeNull();
+    expect(a.blocking).toBe(0);
+    const b = await doorSheet({ [lineKey("j", MA)]: { approved: 2, sizes: { 4: 2, 6: 1 } } });
+    expect(b.blocking).toBe(1);
+  });
+
+  it("color by item keeps linesheet order: red, black, red stays three headings", async () => {
+    const X = [prod("x1", "1", "red", 1), prod("x2", "2", "black", 2), prod("x3", "3", "red", 3)];
+    const lines = resolveLines(X, X.map((p, i) => rev("v" + i, p.id, MA, "Liz", 1, [])), {}).lines;
+    const wb = await buildColorByItemWorkbook({ products: X, lines, issues: [], season: "S", sequenceVerified: false, sequenceNote: "x", store: MA });
+    const ws = wb.getWorksheet(MA)!;
+    const col1: unknown[] = []; ws.eachRow((r, n) => { if (n > 4) col1.push(r.getCell(1).value); });
+    expect(col1).toEqual(["RED", 1, "BLACK", 2, "RED", 3]);
   });
 });
