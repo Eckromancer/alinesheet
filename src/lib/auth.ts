@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
  * and signed-in users simply get the extra server-side scoped access.
  * Flip to true only together with supabase/staged/lockdown.sql.
  */
-export const AUTH_REQUIRED = false;
+export const AUTH_REQUIRED = true;
 
 export type AppRole = "buyer" | "dsa";
 

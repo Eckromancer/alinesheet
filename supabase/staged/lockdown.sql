@@ -1,3 +1,4 @@
+-- APPLIED 2026-11-11 via migration lockdown_reviews_products (owner approved).
 -- STAGED — NOT APPLIED. Run only after every active DSA and buyer has a confirmed,
 -- approved account (access_grants filled, users signed up) and AUTH_REQUIRED = true
 -- in src/lib/auth.ts is shipped in the same release.

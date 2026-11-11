@@ -43,6 +43,13 @@
       "when": 1794421830736,
       "tag": "0005_remove_product_images_listing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794421932183,
+      "tag": "0006_lockdown_reviews_products",
+      "breakpoints": true
     }
   ]
 }
