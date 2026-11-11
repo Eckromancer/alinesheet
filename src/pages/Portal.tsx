@@ -14,6 +14,7 @@ export default function Portal() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   useEffect(() => {
     if (isAdminUnlocked()) {
@@ -97,6 +98,33 @@ export default function Portal() {
             >
               {submitting ? "Verifying…" : "Enter Portal"}
             </Button>
+
+            <button
+              type="button"
+              onClick={() => setShowHelp((v) => !v)}
+              className="block w-full text-center text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              Forgot the access password?
+            </button>
+            {showHelp && (
+              <div className="space-y-2 rounded-xl border border-border bg-muted/40 p-4 text-xs leading-relaxed text-muted-foreground">
+                <p>
+                  The portal access password is a shared password. It cannot be emailed or shown, and it can't be
+                  reset from this page.
+                </p>
+                <p>
+                  <span className="font-medium text-foreground">Project owner:</span> set a new value for the portal
+                  password in the project's settings, then share it privately.
+                </p>
+                <p>
+                  <span className="font-medium text-foreground">Approved buyers:</span> reset your personal sign-in by
+                  email.{" "}
+                  <Link to="/signin?mode=forgot" className="text-foreground underline underline-offset-4">
+                    Send a reset link
+                  </Link>
+                </p>
+              </div>
+            )}
 
             <p className="pt-1 text-center text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
               Secured · Internal Use Only

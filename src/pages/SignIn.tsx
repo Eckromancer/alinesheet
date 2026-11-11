@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { GENERIC_RESET_MESSAGE, normalizeRecoveryEmail } from "@/lib/recovery";
 import AppShell from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,7 @@ export default function SignIn() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get("next") || "/";
-  const [mode, setMode] = useState<Mode>("signin");
+  const [mode, setMode] = useState<Mode>(params.get("mode") === "forgot" ? "forgot" : "signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
@@ -35,10 +36,13 @@ export default function SignIn() {
       });
       setMsg(error ? error.message : "Check your email to confirm your account, then sign in.");
     } else {
-      const { error } = await supabase.auth.resetPasswordForEmail(addr, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      setMsg(error ? error.message : "If that email has an account, a reset link is on its way.");
+      const valid = normalizeRecoveryEmail(addr);
+      if (valid) {
+        await supabase.auth.resetPasswordForEmail(valid, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+      }
+      setMsg(GENERIC_RESET_MESSAGE);
     }
     setBusy(false);
   };
