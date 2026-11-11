@@ -19,11 +19,13 @@ export default function RequireRole({ role, children }: { role: AppRole; childre
   if (!AUTH_REQUIRED) return <>{children}</>;
   if (auth.loading) return <div className="p-10 text-center text-sm text-muted-foreground">Checking access…</div>;
   if (!auth.session) return <Navigate to={`/signin?next=${encodeURIComponent(location.pathname)}`} replace />;
+  // Buyers landing on store-associate pages go to the buyer dashboard instead of a dead end.
+  if (role === "dsa" && auth.roles.includes("buyer") && !auth.identity) return <Navigate to="/manager" replace />;
   const ok = role === "buyer" ? auth.roles.includes("buyer") : auth.roles.includes("dsa") && !!auth.identity;
   if (!ok)
     return (
       <div className="mx-auto max-w-md p-10 text-center text-sm text-muted-foreground">
-        Your account is signed in but has not been approved for this area. Contact the buying office.
+        Your account is signed in but ({auth.session.user.email}) has not been approved. Ask the buying office to approve this exact email, or sign in with an approved one.
       </div>
     );
   return <>{children}</>;
