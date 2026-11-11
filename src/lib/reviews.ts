@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
-import { sortSeasons } from "./seasons";
+import { pickDsaSeason, sortSeasons } from "./seasons";
 
 export type Product = Tables<"products">;
 export type Review = Tables<"reviews">;
@@ -32,8 +32,7 @@ export async function fetchSeasons(): Promise<string[]> {
 }
 
 export async function fetchLatestSeason(): Promise<string | null> {
-  const seasons = await fetchSeasons();
-  return seasons[0] ?? null;
+  return pickDsaSeason(await fetchSeasons());
 }
 
 export async function fetchReviewsFor(reviewer: string, store: string): Promise<Review[]> {

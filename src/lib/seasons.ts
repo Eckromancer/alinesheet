@@ -25,3 +25,10 @@ export function sortSeasons(seasons: string[]): string[] {
 export function seasonSlug(season: string): string {
   return season.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
+/** Season store associates review by default; falls back to the newest season if not loaded. */
+export const DSA_DEFAULT_SEASON = "Pre-Fall 2027";
+
+export function pickDsaSeason(seasons: string[]): string | null {
+  if (seasons.includes(DSA_DEFAULT_SEASON)) return DSA_DEFAULT_SEASON;
+  return sortSeasons(seasons)[0] ?? null;
+}
