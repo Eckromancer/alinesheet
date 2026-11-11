@@ -29,6 +29,13 @@
       "when": 1793464801357,
       "tag": "0003_buyer_allocations",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794421223394,
+      "tag": "0004_harden_review_write_checks",
+      "breakpoints": true
     }
   ]
 }
