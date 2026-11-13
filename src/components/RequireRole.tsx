@@ -19,9 +19,8 @@ export default function RequireRole({ role, children }: { role: AppRole; childre
   if (!AUTH_REQUIRED) return <>{children}</>;
   if (auth.loading) return <div className="p-10 text-center text-sm text-muted-foreground">Checking access…</div>;
   if (!auth.session) return <Navigate to={`/signin?next=${encodeURIComponent(location.pathname)}`} replace />;
-  // Buyers landing on store-associate pages go to the buyer dashboard instead of a dead end.
-  if (role === "dsa" && auth.roles.includes("buyer") && !auth.identity) return <Navigate to="/manager" replace />;
-  const ok = role === "buyer" ? auth.roles.includes("buyer") : auth.roles.includes("dsa") && !!auth.identity;
+  // Buyers may open the DSA view (they can already see every store's reviews).
+  const ok = auth.roles.includes("buyer") || (role === "dsa" && auth.roles.includes("dsa") && !!auth.identity);
   if (!ok)
     return (
       <div className="mx-auto max-w-md p-10 text-center text-sm text-muted-foreground">
