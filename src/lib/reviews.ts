@@ -58,18 +58,22 @@ export async function fetchAll(reviewer: string, store: string, season?: string)
   ]);
   const map = new Map(reviews.map((r) => [r.product_id, r]));
   const quotaMode = !!quotaWorkflowFor(activeSeason, store);
-  const quotas = quotaMode ? await fetchQuotas(store, products.map((p) => p.id)) : new Map<string, QuotaInfo>();
-  return products.map((product) => ({
+  const quotas = quotaMode ? await fetchQuotas(store, products.map((p) => p.id)) : new Map<string, QuotaInfo & { seq: number | null }>();
+  // Fixed-allocation workflow: only styles on the door's allocation, in source-file order. Other products stay untouched.
+  const list = quotaMode
+    ? products.filter((p) => quotas.has(p.id)).sort((a, b) => (quotas.get(a.id)!.seq ?? 1e9) - (quotas.get(b.id)!.seq ?? 1e9))
+    : products;
+  return list.map((product) => ({
     product, review: map.get(product.id) ?? null,
-    ...(quotaMode ? { quotaMode, quota: quotas.get(product.id) } : {}),
+    ...(quotaMode ? { quotaMode, quota: { quota: quotas.get(product.id)!.quota } } : {}),
   }));
 }
 
-export async function fetchQuotas(store: string, productIds: string[]): Promise<Map<string, QuotaInfo>> {
+export async function fetchQuotas(store: string, productIds: string[]): Promise<Map<string, QuotaInfo & { seq: number | null }>> {
   if (!productIds.length) return new Map();
-  const { data, error } = await supabase.from("door_quotas").select("product_id, quota").eq("store", store).in("product_id", productIds);
+  const { data, error } = await supabase.from("door_quotas").select("product_id, quota, source_seq").eq("store", store).in("product_id", productIds);
   if (error) throw error;
-  return new Map((data ?? []).filter((r) => r.product_id).map((r) => [r.product_id as string, { quota: r.quota }]));
+  return new Map((data ?? []).filter((r) => r.product_id).map((r) => [r.product_id as string, { quota: r.quota, seq: r.source_seq }]));
 }
 
 export async function upsertReview(input: {

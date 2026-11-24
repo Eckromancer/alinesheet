@@ -60,6 +60,8 @@ export function quotaIssue(info: QuotaInfo | undefined, counts: SizeCounts): str
 /** Known source-vs-app discrepancies flagged during the MA.xlsx reconciliation. Never auto-applied. */
 export const SOURCE_AUDIT_FLAGS = [
   { style: "2701514803222707", color: "ecru-yellow", note: "Source MSRP $1,990 vs app $1,890 — app price not changed; buyer to confirm." },
+  { style: "2701534300222803", color: "cerulean", note: "Source MSRP $3,990 vs app $3,690 — app price not changed; buyer to confirm." },
+  { style: "2701632100015438", color: "indigo", note: "Source description is only '0086' — kept literally; description incomplete." },
 ];
 
 export interface QuotaRow { style_number: string; color: string; product_id: string | null; quota: number | null; source_seq: number | null }
