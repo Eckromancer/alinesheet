@@ -8,11 +8,13 @@ import { fetchAll, submitAll, type ReviewItem } from "@/lib/reviews";
 import { formatPrice } from "@/lib/exporting";
 import { Loader2, AlertTriangle, ArrowLeft, ImageOff } from "lucide-react";
 import { toast } from "sonner";
+import { normalizeCounts, quotaIssue, countTotal } from "@/lib/quota";
 
 type Bucket = "all" | "green" | "yellow" | "red" | "incomplete";
 
 function validate(item: ReviewItem) {
   const r = item.review;
+  if (item.quotaMode) return quotaIssue(item.quota, normalizeCounts(r?.size_quantities));
   if (!r?.decision_status) return "Missing decision";
   if (r.decision_status === "green" || r.decision_status === "yellow") {
     if (!Array.isArray(r.selected_sizes) || r.selected_sizes.length === 0) return "Missing sizes";
@@ -50,7 +52,7 @@ export default function FinalReview() {
       else if (d === "yellow") c.yellow++;
       else if (d === "red") c.red++;
       if (validate(it)) c.incomplete++;
-      c.units += (it.review?.selected_sizes?.length ?? 0);
+      c.units += it.quotaMode ? countTotal(normalizeCounts(it.review?.size_quantities)) : (it.review?.selected_sizes?.length ?? 0);
     });
     return c;
   }, [items]);

@@ -1,4 +1,5 @@
 import ExcelJS from "exceljs";
+import type { buildQuotaSheet } from "../quota";
 import {
   SIZES, TEMPLATE_DOORS, STORE_TO_DOOR, lineKey, units, allocationStatus, approvedStatus,
   type Allocations, type Issue, type Line, type Product,
@@ -221,4 +222,61 @@ export async function buildDoorSizingWorkbook(opts: {
       opts.sequenceNote,
     ]);
   return { wb, blocking };
+}
+
+/**
+ * Fixed-allocation single-door sheet (e.g. Pre-Fall 2027 8219-MA), source structure A:G:
+ * Image | Style # | Color | Style Description | US MSRP | Sizes | <door>.
+ * Top row = fixed quota; size rows = submitted DSA counts only; subtotal = SUM formula.
+ */
+export async function buildQuotaSizingWorkbook(opts: {
+  sheet: ReturnType<typeof buildQuotaSheet>; door: string; store: string; season: string;
+  images?: Map<string, ArrayBuffer>; auditFlags?: { style: string; color: string; note: string }[];
+}) {
+  const { sheet, door, images } = opts;
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Sheet 1");
+  ws.columns = [23.73, 18.09, 11.27, 18.91, 9.73, 6.54, 9.54].map((width) => ({ width }));
+  ["Image", "Style #", "Color", "Style Description", "US MSRP", "Sizes", door]
+    .forEach((v, i) => { const c = ws.getRow(1).getCell(i + 1); c.value = v; c.font = { ...FONT, bold: true }; });
+  const fill: ExcelJS.Fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF00" } };
+  const issues: Issue[] = [];
+  let r = 2;
+  for (const l of sheet.lines) {
+    const top = ws.getRow(r);
+    top.getCell(2).value = l.style;
+    top.getCell(3).value = l.color;
+    top.getCell(4).value = l.description;
+    if (l.msrp != null) top.getCell(5).value = Number(l.msrp);
+    if (l.quota != null) top.getCell(7).value = l.quota;
+    SIZES.forEach((z, si) => {
+      const row = ws.getRow(r + 1 + si);
+      row.getCell(6).value = z;
+      const q = l.counts?.[String(z)];
+      if (q) row.getCell(7).value = q;
+      if (l.state !== "complete") row.getCell(7).fill = fill;
+    });
+    ws.getRow(r + 9).getCell(7).value = { formula: `SUM(G${r + 1}:G${r + 8})` };
+    const where = `${l.style} ${l.color}`;
+    if (l.state === "unlinked") issues.push({ kind: "No matching app style", severity: "blocking", detail: `${where}: quota ${l.quota ?? "BLANK"} — no Pre-Fall 2027 product with this exact style # + color. Sizes blank.` });
+    if (l.state === "missing_quota") issues.push({ kind: "Buyer allocation missing", severity: "blocking", detail: `${where}: source quota is blank (not zero).` });
+    if (l.state === "not_submitted") issues.push({ kind: "Not submitted", severity: "blocking", detail: `${where}: quota ${l.quota}; DSA sizes not submitted. Sizes blank.` });
+    if (l.state === "empty" || l.state === "partial" || l.state === "excess") issues.push({ kind: "Size total mismatch", severity: "blocking", detail: `${where}: sizes ${l.counts ? Object.values(l.counts).reduce((a, b) => a + b, 0) : 0} vs quota ${l.quota}.` });
+    const img = l.productId ? images?.get(l.productId) : undefined;
+    if (img) {
+      const id = wb.addImage({ buffer: img as unknown as ExcelJS.Buffer, extension: "jpeg" });
+      ws.addImage(id, { tl: { col: 0.1, row: r - 1 + 0.1 }, ext: { width: 120, height: 160 } });
+    }
+    r += 10;
+  }
+  for (const f of opts.auditFlags ?? []) issues.push({ kind: "Source vs app discrepancy", severity: "info", detail: `${f.style} ${f.color}: ${f.note}` });
+  ws.eachRow((row) => row.eachCell((c) => { if (!c.font?.bold) c.font = FONT; }));
+  addValidationSheet(wb, issues,
+    sheet.isDraft ? `DRAFT — ${sheet.complete}/${sheet.required} allocated styles fully sized; yellow = not confirmed` : "All allocations sized — NuORDER compatibility unverified until paste-tested",
+    [
+      `Door ${door} (${opts.store}), ${opts.season}. Top number = fixed buyer allocation; size rows = submitted DSA counts only. Nothing estimated.`,
+      "Columns follow MA.xlsx A:G. Images come from the app (source image cells are not copied). Subtotal row is a SUM formula.",
+      "NuORDER compatibility is unverified until a paste test is done.",
+    ]);
+  return { wb, blocking: issues.filter((i) => i.severity === "blocking").length };
 }

@@ -50,6 +50,20 @@
       "when": 1794421932183,
       "tag": "0006_lockdown_reviews_products",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795536073662,
+      "tag": "0007_door_quotas_and_size_quantities",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795536138356,
+      "tag": "0008_door_quotas_source_seq",
+      "breakpoints": true
     }
   ]
 }

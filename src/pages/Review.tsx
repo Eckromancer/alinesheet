@@ -14,12 +14,14 @@ import DecisionButtons from "@/components/DecisionButtons";
 import ProductImage from "@/components/ProductImage";
 import { ChevronLeft, ChevronRight, FastForward, CheckCircle2, Loader2, Lock } from "lucide-react";
 import { toast } from "sonner";
+import { adjustCount, countTotal, normalizeCounts, quotaIssue, QUOTA_SIZES, type SizeCounts } from "@/lib/quota";
 
 const SIZES = [2, 4, 6, 8, 10, 12, 14, 16];
 const QUANTITY_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 function isComplete(item: ReviewItem) {
   const r = item.review;
+  if (item.quotaMode) return quotaIssue(item.quota, normalizeCounts(r?.size_quantities)) === null;
   if (!r?.decision_status) return false;
   if (r.decision_status === "green" || r.decision_status === "yellow") {
     if (!Array.isArray(r.selected_sizes) || r.selected_sizes.length === 0) return false;
@@ -65,7 +67,7 @@ export default function Review() {
   const completed = useMemo(() => items.filter(isComplete).length, [items]);
   const locked = current?.review?.submission_status === "submitted";
 
-  const persist = (patch: Partial<{ decision_status: DecisionStatus | null; requested_bulk_units: number | null; notes: string | null; selected_sizes: number[] | null; special_order_notes: string | null }>) => {
+  const persist = (patch: Partial<{ decision_status: DecisionStatus | null; requested_bulk_units: number | null; notes: string | null; selected_sizes: number[] | null; special_order_notes: string | null; size_quantities: SizeCounts }>) => {
     if (!session || !current) return;
     // optimistic update
     setItems((prev) => {
@@ -82,6 +84,7 @@ export default function Review() {
           notes: null,
           selected_sizes: [],
           special_order_notes: null,
+          size_quantities: {},
           submission_status: "draft" as const,
           submitted_at: null,
           created_at: "",
@@ -106,6 +109,7 @@ export default function Review() {
           selected_sizes: patch.selected_sizes !== undefined ? patch.selected_sizes : (cur.review?.selected_sizes ?? []),
           special_order_notes:
             patch.special_order_notes !== undefined ? patch.special_order_notes : cur.review?.special_order_notes ?? null,
+          ...(cur.quotaMode ? { size_quantities: patch.size_quantities ?? normalizeCounts(cur.review?.size_quantities) } : {}),
         };
         const saved = await upsertReview({
           product_id: current.product.id,
@@ -159,7 +163,10 @@ export default function Review() {
 
   const r = current.review;
   const decision = r?.decision_status ?? null;
-  const showUnits = decision === "green" || decision === "yellow" || decision === "red";
+  const showUnits = !current.quotaMode && (decision === "green" || decision === "yellow" || decision === "red");
+  const counts = normalizeCounts(r?.size_quantities);
+  const quota = current.quota?.quota ?? null;
+  const chosen = countTotal(counts);
 
   return (
     <AppShell
@@ -202,8 +209,40 @@ export default function Review() {
             </div>
           </header>
 
+          {current.quotaMode && (
+            <section aria-label="Size allocation">
+              {!current.quota ? (
+                <p className="rounded-lg border border-border bg-secondary/60 px-3 py-2 text-sm text-muted-foreground">Not on the Michigan Avenue allocation — nothing to size.</p>
+              ) : quota == null ? (
+                <p className="rounded-lg border border-decision-yellow/50 bg-decision-yellow-soft px-3 py-2 text-sm">Buyer allocation missing — nothing to size until the buying office sets it.</p>
+              ) : (
+                <>
+                  <div className="mb-3 flex items-baseline justify-between">
+                    <Label className="text-xs uppercase tracking-widest text-muted-foreground">Allocated <span className="ml-1 text-base font-semibold text-foreground">{quota}</span></Label>
+                    <span className={"text-sm font-medium " + (chosen === quota ? "text-decision-green" : "text-muted-foreground")} aria-live="polite">{chosen} selected of {quota}</span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+                    {QUOTA_SIZES.map((z) => {
+                      const n = counts[String(z)] ?? 0;
+                      return (
+                        <div key={z} className={"flex flex-col items-center rounded-lg border p-1.5 " + (n ? "border-foreground" : "border-border")}>
+                          <span className="text-sm font-medium">{z}</span>
+                          <div className="mt-1 flex items-center gap-1">
+                            <button type="button" aria-label={`Remove size ${z}`} disabled={locked || n === 0} onClick={() => persist({ size_quantities: adjustCount(counts, z, -1, quota) })} className="h-7 w-7 rounded border border-border text-sm disabled:opacity-30">−</button>
+                            <span className="w-4 text-center text-sm tabular-nums" aria-label={`Size ${z} count`}>{n}</span>
+                            <button type="button" aria-label={`Add size ${z}`} disabled={locked || chosen >= quota} onClick={() => persist({ size_quantities: adjustCount(counts, z, 1, quota) })} className="h-7 w-7 rounded border border-border text-sm disabled:opacity-30">+</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </section>
+          )}
+
           {/* Decision */}
-          <section>
+          {!current.quotaMode && <section>
             <Label className="mb-2 block text-xs uppercase tracking-widest text-muted-foreground">Decision</Label>
             <DecisionButtons
               value={decision}
@@ -216,7 +255,7 @@ export default function Review() {
               }}
               disabled={locked}
             />
-          </section>
+          </section>}
 
           {/* Requested Units */}
           {showUnits && (

@@ -103,6 +103,62 @@ export type Database = {
           },
         ]
       }
+      door_quotas: {
+        Row: {
+          color: string
+          created_at: string
+          door_code: string
+          id: string
+          product_id: string | null
+          quota: number | null
+          season: string
+          source: string | null
+          source_seq: number | null
+          store: string
+          style_number: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          color: string
+          created_at?: string
+          door_code: string
+          id?: string
+          product_id?: string | null
+          quota?: number | null
+          season: string
+          source?: string | null
+          source_seq?: number | null
+          store: string
+          style_number: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          door_code?: string
+          id?: string
+          product_id?: string | null
+          quota?: number | null
+          season?: string
+          source?: string | null
+          source_seq?: number | null
+          store?: string
+          style_number?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "door_quotas_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dsa_identity: {
         Row: {
           reviewer: string
@@ -169,6 +225,7 @@ export type Database = {
           requested_bulk_units: number | null
           reviewer: string
           selected_sizes: number[]
+          size_quantities: Json
           special_order_notes: string | null
           store: string
           submission_status: Database["public"]["Enums"]["submission_status"]
@@ -188,6 +245,7 @@ export type Database = {
           requested_bulk_units?: number | null
           reviewer: string
           selected_sizes?: number[]
+          size_quantities?: Json
           special_order_notes?: string | null
           store?: string
           submission_status?: Database["public"]["Enums"]["submission_status"]
@@ -207,6 +265,7 @@ export type Database = {
           requested_bulk_units?: number | null
           reviewer?: string
           selected_sizes?: number[]
+          size_quantities?: Json
           special_order_notes?: string | null
           store?: string
           submission_status?: Database["public"]["Enums"]["submission_status"]
@@ -270,6 +329,7 @@ export type Database = {
           requested_bulk_units: number | null
           reviewer: string
           selected_sizes: number[]
+          size_quantities: Json
           special_order_notes: string | null
           store: string
           submission_status: Database["public"]["Enums"]["submission_status"]

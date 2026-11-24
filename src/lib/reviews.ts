@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { pickDsaSeason, sortSeasons } from "./seasons";
+import { quotaWorkflowFor, type QuotaInfo } from "./quota";
 
 export type Product = Tables<"products">;
 export type Review = Tables<"reviews">;
@@ -11,6 +12,10 @@ export type SubmissionStatus = "draft" | "submitted";
 export interface ReviewItem {
   product: Product;
   review: Review | null;
+  /** Set only in fixed-allocation workflows. undefined = no allocation line for this style. */
+  quota?: QuotaInfo;
+  /** True when this season/store uses the fixed-allocation sizing workflow. */
+  quotaMode?: boolean;
 }
 
 export async function fetchProducts(season?: string): Promise<Product[]> {
@@ -52,7 +57,19 @@ export async function fetchAll(reviewer: string, store: string, season?: string)
     fetchReviewsFor(reviewer, store),
   ]);
   const map = new Map(reviews.map((r) => [r.product_id, r]));
-  return products.map((product) => ({ product, review: map.get(product.id) ?? null }));
+  const quotaMode = !!quotaWorkflowFor(activeSeason, store);
+  const quotas = quotaMode ? await fetchQuotas(store, products.map((p) => p.id)) : new Map<string, QuotaInfo>();
+  return products.map((product) => ({
+    product, review: map.get(product.id) ?? null,
+    ...(quotaMode ? { quotaMode, quota: quotas.get(product.id) } : {}),
+  }));
+}
+
+export async function fetchQuotas(store: string, productIds: string[]): Promise<Map<string, QuotaInfo>> {
+  if (!productIds.length) return new Map();
+  const { data, error } = await supabase.from("door_quotas").select("product_id, quota").eq("store", store).in("product_id", productIds);
+  if (error) throw error;
+  return new Map((data ?? []).filter((r) => r.product_id).map((r) => [r.product_id as string, { quota: r.quota }]));
 }
 
 export async function upsertReview(input: {
@@ -64,6 +81,7 @@ export async function upsertReview(input: {
   notes?: string | null;
   selected_sizes?: number[] | null;
   special_order_notes?: string | null;
+  size_quantities?: Record<string, number> | null;
 }) {
   const { data, error } = await supabase
     .from("reviews")
@@ -77,6 +95,7 @@ export async function upsertReview(input: {
         notes: input.notes ?? null,
         selected_sizes: input.selected_sizes ?? [],
         special_order_notes: input.special_order_notes ?? null,
+        ...(input.size_quantities !== undefined ? { size_quantities: input.size_quantities ?? {} } : {}),
       },
       { onConflict: "product_id,reviewer,store" }
     )

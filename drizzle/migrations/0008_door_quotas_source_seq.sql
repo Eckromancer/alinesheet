@@ -1,0 +1,1 @@
+ALTER TABLE public.door_quotas ADD COLUMN source_seq integer;

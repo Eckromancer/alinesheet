@@ -8,7 +8,7 @@ const prod = (id: string, style: string, color: string, sort: number, price: num
   ({ id, style_number: style, color, sort_order: sort, long_style_desc: `desc ${id}`, retail_price: price, image_url: null, season: "Summer 2027", created_at: "" });
 const rev = (id: string, pid: string, store: string, reviewer: string, u: number | null, sizes: number[], d: Review["decision_status"] = "green", status: Review["submission_status"] = "submitted"): Review =>
   ({ id, product_id: pid, store, reviewer, requested_bulk_units: u, selected_sizes: sizes, decision_status: d, submission_status: status,
-     notes: null, special_order_notes: null, processed: false, processed_at: null, created_at: "", updated_at: "", submitted_at: "" });
+     notes: null, special_order_notes: null, size_quantities: {}, processed: false, processed_at: null, created_at: "", updated_at: "", submitted_at: "" });
 
 const P = [prod("a", "7701000000000001", "black", 2), prod("b", "7701000000000001", "ecru", 1), prod("c", "7701000000000003", "black", 3, null)];
 const R = [

@@ -9,7 +9,8 @@ import {
   SIZES, lineKey, orderProducts, resolveLines, validate, allocationStatus, units,
   type Allocations, type DuplicateChoices, type Product, type Review,
 } from "@/lib/nuorder/model";
-import { buildColorByItemWorkbook, buildSizingWorkbook, buildDoorSizingWorkbook } from "@/lib/nuorder/workbooks";
+import { buildColorByItemWorkbook, buildSizingWorkbook, buildDoorSizingWorkbook, buildQuotaSizingWorkbook } from "@/lib/nuorder/workbooks";
+import { buildQuotaSheet, normalizeCounts, quotaWorkflowFor, SOURCE_AUDIT_FLAGS, type QuotaRow, type SizeCounts } from "@/lib/quota";
 import { STORE_TO_DOOR } from "@/lib/nuorder/model";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -91,6 +92,20 @@ export default function NuorderExports({ season, products, reviews }: Props) {
           if (!p.image_url) return;
           try { const res = await fetch(p.image_url); if (res.ok) images.set(p.id, await res.arrayBuffer()); } catch { /* image optional */ }
         }));
+        const wf = door !== "__all" ? quotaWorkflowFor(season, door) : null;
+        if (wf) {
+          const { data, error } = await supabase.from("door_quotas").select("style_number,color,product_id,quota,source_seq").eq("season", wf.season).eq("store", wf.store);
+          if (error) throw error;
+          const submitted = new Map<string, SizeCounts>();
+          for (const rv of reviews) if (rv.store === wf.store && rv.submission_status === "submitted") submitted.set(rv.product_id, normalizeCounts(rv.size_quantities));
+          const sheet = buildQuotaSheet((data ?? []) as QuotaRow[], products.map((p) => ({ ...p, retail_price: p.retail_price == null ? null : Number(p.retail_price) })), submitted);
+          const out = await buildQuotaSizingWorkbook({ sheet, door: wf.door, store: wf.store, season, images, auditFlags: SOURCE_AUDIT_FLAGS });
+          const buf = await out.wb.xlsx.writeBuffer();
+          const url = URL.createObjectURL(new Blob([buf], { type: XLSX_MIME }));
+          const name = `${sheet.isDraft ? "DRAFT-" : ""}sizing-${wf.door}-${slug}-${date}.xlsx`;
+          setReady((prev) => [...prev.filter((r) => !r.name.includes("sizing")), { url, name, label: `Sizing ${wf.door}${sheet.isDraft ? " (DRAFT)" : ""}` }]);
+          return;
+        }
         if (doorCode) {
           const out = await buildDoorSizingWorkbook({ products: seq.ordered, lines, allocations, store: door, door: doorCode, sequenceNote, images });
           const buf = await out.wb.xlsx.writeBuffer();
